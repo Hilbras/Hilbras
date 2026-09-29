@@ -1,4 +1,4 @@
-import { statusLabels, type ProductStatus } from '../../data/areas';
+import { statusDefinitions, statusLabels, type ProductStatus } from '../../data/areas';
 
 const statusClass: Record<ProductStatus, string> = {
   stable: 'border-success/25 bg-success/10 text-success',
@@ -37,6 +37,10 @@ export function StatusPill({ status, compact }: StatusPillProps) {
   return (
     <span
       data-status={status}
+      // The four levels mean different things, and a reader should not have to
+      // guess whether `Alpha` is production-ready. The definition is on the
+      // element for pointer and assistive-technology users alike.
+      title={statusDefinitions[status]}
       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.08em] uppercase ${statusClass[status]}`}
     >
       {status === 'stable' ? (

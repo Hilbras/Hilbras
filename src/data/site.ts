@@ -16,6 +16,12 @@ export const site = {
   headline: 'Build. Connect. Create.',
   description:
     'Hilbras is an independent technology company building AI infrastructure, developer tools, application platforms, computing environments, and security tooling.',
+  /**
+   * Bumped when the public content changes. Feeds the sitemap's `lastmod`,
+   * which is why it is a single value rather than a per-route one while there
+   * is only a single route.
+   */
+  lastModified: '2026-09-29',
   organisation: {
     legalName: 'Hilbras',
     founding: '2026',

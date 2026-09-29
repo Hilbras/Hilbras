@@ -6,13 +6,14 @@
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm build:client && pnpm build:server && pnpm prerender",
+    "build": "pnpm build:client && pnpm build:server && pnpm seo && pnpm prerender",
     "build:client": "vite build",
     "build:server": "vite build --mode ssr",
     "prerender": "node scripts/prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seo": "node scripts/generate-seo.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",

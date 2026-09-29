@@ -33,16 +33,34 @@ export type Area = {
 
 export type ProductStatus = 'stable' | 'beta' | 'alpha' | 'building';
 
+/**
+ * What kind of thing this is. Drives the schema.org type in the structured
+ * data, so an operating system is not published as a developer application.
+ */
+export type ProductKind = 'library' | 'service' | 'platform' | 'application' | 'system';
+
 export type Product = {
   id: string;
   name: string;
   area: AreaId;
+  /** Two or three sentences. The full description on the product cards. */
   description: string;
+  /** One line, for the navigation dropdown and the footer. */
+  summary: string;
+  kind: ProductKind;
   status: ProductStatus;
   /** A deployed, public product site. Omitted when there is none. */
   href?: string;
   /** The public repository. Omitted when the work is not public yet. */
   repository?: string;
+  /** Published documentation, when it exists separately from the repository. */
+  documentation?: string;
+  /**
+   * Where it runs. Optional, because "cross-platform" is true of nearly
+   * everything here and stating it eleven times is noise; a product that is not
+   * cross-platform says so.
+   */
+  platform?: string;
   /** The geometric mark the card renders. */
   mark: MarkId;
   featured?: boolean;
@@ -118,7 +136,10 @@ export const products: readonly Product[] = [
     area: 'ai',
     description:
       'A provider-agnostic LLM client SDK for TypeScript. Streaming, tool calling, structured output, circuit breaker, retry, and cost enforcement across OpenAI, Anthropic, Gemini, Azure, Groq, and Ollama — with zero runtime dependencies.',
+    summary: 'A provider-agnostic LLM client SDK for TypeScript.',
+    kind: 'library',
     status: 'stable',
+    documentation: 'https://github.com/Hilbras/Hilbras-ai-sdk#readme',
     mark: 'diamond',
     featured: true,
     repository: 'https://github.com/Hilbras/Hilbras-ai-sdk',
@@ -129,7 +150,10 @@ export const products: readonly Product[] = [
     area: 'ai',
     description:
       'External memory for AI assistants. Facts, decisions, roles, and history live outside the context window, and only the authorised, relevant subset comes back. Speaks MCP, HTTP, and TypeScript.',
+    summary: 'Durable memory for AI assistants, outside the context window.',
+    kind: 'service',
     status: 'stable',
+    documentation: 'https://github.com/Hilbras/Remembra#readme',
     mark: 'memory',
     featured: true,
     repository: 'https://github.com/Hilbras/Remembra',
@@ -140,7 +164,10 @@ export const products: readonly Product[] = [
     area: 'developer-infrastructure',
     description:
       'An API-first identity and authentication platform. OIDC and OAuth 2.0, a JWT token authority, RBAC and ABAC, WebAuthn passkeys, a federation broker, and an immutable audit log.',
+    summary: 'An API-first identity and authentication platform.',
+    kind: 'service',
     status: 'stable',
+    documentation: 'https://github.com/Hilbras/Keystone#readme',
     mark: 'keystone',
     featured: true,
     repository: 'https://github.com/Hilbras/Keystone',
@@ -151,7 +178,10 @@ export const products: readonly Product[] = [
     area: 'platforms',
     description:
       'An extensible application and content runtime. Users, roles, content, revisions, taxonomy, media, and a plugin system with manifests, lifecycle hooks, and permissions.',
+    summary: 'An extensible application and content runtime.',
+    kind: 'platform',
     status: 'alpha',
+    documentation: 'https://github.com/Hilbras/HilPress#readme',
     mark: 'panel',
     repository: 'https://github.com/Hilbras/HilPress',
   },
@@ -161,7 +191,10 @@ export const products: readonly Product[] = [
     area: 'platforms',
     description:
       'A goal-driven AI runtime. Give it a goal; it plans the work, schedules it, and publishes across X, Instagram, Facebook, Threads, and Telegram — pausing where a person has to approve.',
+    summary: 'A goal-driven runtime that plans, schedules, and publishes.',
+    kind: 'platform',
     status: 'beta',
+    documentation: 'https://github.com/Hilbras/Hilbras-Studio#readme',
     mark: 'target',
     href: 'https://hilbras-studio.vercel.app',
     repository: 'https://github.com/Hilbras/Hilbras-Studio',
@@ -172,6 +205,8 @@ export const products: readonly Product[] = [
     area: 'ai',
     description:
       'A single edge in front of every model provider. One endpoint, one key, and one place to decide where a request is allowed to run.',
+    summary: 'A single edge in front of every model provider.',
+    kind: 'service',
     status: 'building',
     mark: 'portal',
   },
@@ -181,7 +216,10 @@ export const products: readonly Product[] = [
     area: 'ai',
     description:
       'Routing and provider management. Health checks, retries, and fallbacks decide which model serves a request, the local gateway keeps your keys on your own machine, and every decision stays readable afterwards.',
+    summary: 'Routing and provider management for model traffic.',
+    kind: 'service',
     status: 'beta',
+    documentation: 'https://github.com/Hilbras/OmniHilbras#readme',
     mark: 'prism',
     featured: true,
     repository: 'https://github.com/Hilbras/OmniHilbras',
@@ -192,7 +230,10 @@ export const products: readonly Product[] = [
     area: 'computing',
     description:
       'A desktop operating system with its own shell, dock, workspaces, and system services — an environment for Hilbras software rather than a rebrand of the base system.',
+    summary: 'A desktop operating system with its own shell and services.',
+    kind: 'system',
     status: 'building',
+    platform: 'Linux',
     mark: 'desktop',
   },
   {
@@ -201,7 +242,10 @@ export const products: readonly Product[] = [
     area: 'developer-infrastructure',
     description:
       'A coding agent with one core and four surfaces — web, desktop, CLI, and editor. A streaming agent loop, filesystem and shell tools, and a permission layer that fails closed.',
+    summary: 'A coding agent for web, desktop, CLI, and editor.',
+    kind: 'application',
     status: 'alpha',
+    documentation: 'https://github.com/Hilbras/Hilbras-code#readme',
     mark: 'terminal',
     repository: 'https://github.com/Hilbras/Hilbras-code',
   },
@@ -211,6 +255,8 @@ export const products: readonly Product[] = [
     area: 'social',
     description:
       'Code collaboration and a working community around it. Review, discussion, and the shared record of what a project is and why it looks the way it does.',
+    summary: 'Code collaboration and community around a project.',
+    kind: 'platform',
     status: 'building',
     mark: 'branches',
   },
@@ -220,7 +266,10 @@ export const products: readonly Product[] = [
     area: 'security',
     description:
       'A modular, extensible security testing and analysis platform — a 21-crate Rust workspace covering target management, discovery, fingerprinting, scanning, verification, and reporting.',
+    summary: 'A modular security testing and analysis platform.',
+    kind: 'service',
     status: 'beta',
+    documentation: 'https://github.com/Hilbras/Spectra#readme',
     mark: 'shield',
     repository: 'https://github.com/Hilbras/Spectra',
   },
@@ -241,4 +290,28 @@ export const statusLabels: Record<ProductStatus, string> = {
   beta: 'Beta',
   alpha: 'Alpha',
   building: 'In development',
+};
+
+/**
+ * What each status actually promises. Published in the structured data and
+ * surfaced in the product cards, so a reader is never left to infer whether
+ * `Alpha` means production-ready.
+ */
+export const statusDefinitions: Record<ProductStatus, string> = {
+  stable: 'Publicly released. Interfaces may still gain additive changes.',
+  beta: 'Usable and documented, but the interface is still settling.',
+  alpha: 'Public and working, with parts of the interface still changing.',
+  building: 'Under active construction. Nothing here is a supported release yet.',
+};
+
+/** Ordered least to most mature. Used for validation and any future sort. */
+export const statusOrder: readonly ProductStatus[] = ['building', 'alpha', 'beta', 'stable'];
+
+/** schema.org type and category by product kind. */
+export const productSchemas: Record<ProductKind, { type: string; category: string }> = {
+  library: { type: 'SoftwareSourceCode', category: 'DeveloperLibrary' },
+  service: { type: 'SoftwareApplication', category: 'DeveloperApplication' },
+  platform: { type: 'SoftwareApplication', category: 'BusinessApplication' },
+  application: { type: 'SoftwareApplication', category: 'ConsumerApplication' },
+  system: { type: 'OperatingSystem', category: 'OperatingSystem' },
 };

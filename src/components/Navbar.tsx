@@ -103,9 +103,12 @@ export function Navbar() {
               <div
                 id={productsMenuId}
                 data-state={dropdown.state}
-                className="disclosure absolute top-full left-1/2 w-[560px] -translate-x-1/2 pt-3"
+                className="disclosure absolute top-full left-1/2 w-[560px] max-w-[calc(100vw-2.5rem)] -translate-x-1/2 pt-3"
               >
-                <div className="card overflow-hidden p-2">
+                {/* Six areas of products with a line of summary each is taller
+                    than a short viewport. Scroll inside the panel rather than
+                    letting it run off the bottom of the screen. */}
+                <div className="card max-h-[min(38rem,calc(100vh-7rem))] overflow-y-auto overscroll-contain p-2">
                   <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5">
                     {areas.map((area) => (
                       <li key={area.id} className="px-2 py-2">
@@ -119,7 +122,10 @@ export function Navbar() {
                                 onClick={dropdown.close}
                               >
                                 <Mark id={product.mark} className="h-3.5 w-3.5 shrink-0 text-gold" />
-                                <span className="truncate">{product.name}</span>
+                                <span className="min-w-0">
+                                  <span className="block truncate">{product.name}</span>
+                                  <span className="muted block truncate text-[11px]">{product.summary}</span>
+                                </span>
                                 <StatusPill status={product.status} compact />
                               </ProductLink>
                             </li>
