@@ -1,0 +1,712 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ *
+ * Typefaces, self-hosted.
+ *
+ * Geist and Geist Mono ship with the same design language as the rest of
+ * the family. They used to load from Google Fonts, which put a
+ * render-blocking third-party stylesheet in front of first paint and sent
+ * every visitor's IP to a third party. Two subset files per family is
+ * 82 KB total and removes both problems. Only `latin` and `latin-ext` are
+ * shipped; everything else falls back to the system stack.
+ * ------------------------------------------------------------------ */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('/fonts/geist-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('/fonts/geist-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ------------------------------------------------------------------ *
+ * Hilbras design tokens.
+ *
+ * Values are inherited from the OmniHilbras design language so the two
+ * products read as one family. Token *names* are unchanged on purpose:
+ * the same name carrying the same value is what makes the relationship
+ * obvious in review.
+ * ------------------------------------------------------------------ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #faf9f5;
+  --bg-soft: #f3f0e7;
+  --surface: #ffffff;
+  --surface-2: #f7f4ec;
+  --text: #17150f;
+  --muted: #6f6857;
+  --line: #e7e1d1;
+  --line-strong: #d8d0bb;
+  --gold: #d4af37;
+  --gold-bright: #e9c963;
+  /* Slightly deeper than the reference value: at 11px the eyebrow pill needs
+     4.5:1 against its own gold tint, and #8a6d12 only reached 4.3:1. */
+  --gold-text: #7d620f;
+  /* Mid stop for the display gradient. Kept dark enough that the widest,
+     lightest part of the phrase still clears 3:1 as large text. */
+  --gold-mid: #a8820f;
+  /* Dark ink on the gold fill. White-on-gold is only 2.1:1, which fails WCAG AA
+     for the 14px button label; this lands near 9:1 and keeps the gold button
+     identical in both themes. */
+  --gold-ink: #1c1704;
+  --gold-soft: rgba(212, 175, 55, 0.14);
+  --glow: rgba(212, 175, 55, 0.35);
+  /* Deeper than the reference value: the status pills tint their own background
+     10% with this colour, which cost the 10px "Stable" label enough contrast to
+     land at 4.1:1. This measures 6.9:1. */
+  --success: #0f5c38;
+  --danger: #c23b31;
+  --shadow: 0 1px 2px rgba(30, 25, 5, 0.05), 0 12px 40px rgba(30, 25, 5, 0.07);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0c0b09;
+  --bg-soft: #12100c;
+  --surface: #15130e;
+  --surface-2: #1b1812;
+  --text: #f2efe6;
+  --muted: #9c9584;
+  --line: #262117;
+  --line-strong: #353021;
+  --gold: #e2bd52;
+  --gold-bright: #f3d789;
+  --gold-text: #e6c768;
+  --gold-mid: #f3d789;
+  --gold-ink: #1a1503;
+  --gold-soft: rgba(226, 189, 82, 0.12);
+  --glow: rgba(226, 189, 82, 0.25);
+  --success: #6fdb9b;
+  --danger: #ff8a80;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-text: var(--gold-text);
+  --color-gold-ink: var(--gold-ink);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Anchored sections must clear the sticky header. */
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: var(--glow);
+    color: var(--text);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid var(--bg);
+    border-radius: 8px;
+    background: var(--line-strong);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+
+  :focus-visible {
+    /* `--gold-text` rather than `--gold`: pure gold is only 2.1:1 against the
+       light background, and a focus ring has to clear 3:1 (WCAG 1.4.11). */
+    outline: 2px solid var(--gold-text);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  /* --- Layout -------------------------------------------------- */
+  .shell {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  .section-band {
+    border-block: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg-soft) 55%, transparent);
+  }
+
+  .section-pad {
+    padding-block: 4rem;
+  }
+
+  @media (min-width: 640px) {
+    .section-pad {
+      padding-block: 6rem;
+    }
+  }
+
+  /* --- Controls ------------------------------------------------ */
+  .nav-blur {
+    background: color-mix(in srgb, var(--bg) 74%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+
+  .btn-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid color-mix(in srgb, var(--gold) 70%, #000 30%);
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 55%, var(--gold) 100%);
+    box-shadow: 0 6px 24px var(--glow);
+    color: var(--gold-ink);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1;
+    padding: 10px 17px;
+    transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  }
+
+  .btn-gold:hover {
+    box-shadow: 0 10px 32px var(--glow);
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+  }
+
+  .btn-gold:active {
+    transform: translateY(0);
+  }
+
+  .btn-gold:disabled,
+  .btn-ghost:disabled,
+  .btn-quiet:disabled {
+    opacity: 0.45;
+    filter: saturate(0.5);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 550;
+    line-height: 1;
+    padding: 10px 17px;
+    transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+    transform: translateY(-1px);
+  }
+
+  .btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 550;
+    padding: 9px 10px;
+    transition: color 150ms ease, background 150ms ease;
+  }
+
+  .btn-quiet:hover {
+    background: var(--gold-soft);
+    color: var(--gold-text);
+  }
+
+  .theme-toggle {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--gold-text);
+    transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+  }
+
+  [data-theme='light'] .theme-toggle {
+    color: #17150f;
+  }
+
+  /* --- Surfaces ----------------------------------------------- */
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  }
+
+  /* The single hover affordance used by every card on the site. */
+  .card-glow {
+    position: absolute;
+    right: -3rem;
+    bottom: -3rem;
+    width: 8rem;
+    height: 8rem;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    filter: blur(2rem);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+
+  .group:hover .card-glow,
+  .group:focus-within .card-glow {
+    opacity: 1;
+  }
+
+  /* --- Type --------------------------------------------------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: var(--gold-text);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    line-height: 1;
+    padding: 7px 12px;
+    text-transform: uppercase;
+  }
+
+  .eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--gold);
+    box-shadow: 0 0 0 4px var(--gold-soft);
+  }
+
+  .section-title {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 720;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+  }
+
+  .display-title {
+    font-size: clamp(40px, 8vw, 76px);
+    font-weight: 800;
+    letter-spacing: -0.055em;
+    line-height: 0.98;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .mono-label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .gold-text {
+    background: linear-gradient(100deg, var(--gold-text), var(--gold-mid) 45%, var(--gold-text) 90%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.55;
+  }
+
+  /* --- Decoration --------------------------------------------- */
+  .bg-glow {
+    background: radial-gradient(ellipse 90% 60% at 50% -15%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%);
+  }
+
+  .grid-wash {
+    background-image: linear-gradient(to right, color-mix(in srgb, var(--line) 50%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--line) 50%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, black, transparent 78%);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 78%);
+  }
+
+  .particle-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* --- Navigation --------------------------------------------- */
+  .skip-link {
+    position: fixed;
+    top: -64px;
+    left: 16px;
+    z-index: 300;
+    transition: top 150ms ease;
+  }
+
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  .nav-link {
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 550;
+    padding: 6px 10px;
+    transition: color 150ms ease, background 150ms ease;
+  }
+
+  .nav-link:hover,
+  .nav-link[aria-expanded='true'] {
+    background: var(--gold-soft);
+    color: var(--gold-text);
+  }
+
+  /* --- Flow diagram ------------------------------------------- */
+  .flow-line {
+    background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 20%, transparent));
+  }
+
+  .flow-line-h {
+    background: linear-gradient(90deg, var(--gold), color-mix(in srgb, var(--gold) 20%, transparent));
+  }
+
+  .node {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  }
+
+  .node:hover {
+    border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+    background: color-mix(in srgb, var(--gold-soft) 55%, var(--surface));
+    box-shadow: 0 8px 24px var(--glow);
+    transform: translateY(-2px);
+  }
+
+  .node-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* --- Footer ------------------------------------------------- */
+  .footer-link {
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+
+  .footer-link:hover {
+    color: var(--gold-text);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Motion
+ *
+ * Every reveal on this site is a CSS transition driven by one
+ * IntersectionObserver. It used to be a JavaScript animation library, which
+ * cost roughly 50 KB gzipped to do work the browser already does natively —
+ * and made the page depend on hydration to become visible at all.
+ *
+ * Two properties make it safe:
+ *   1. The hidden state only exists under `prefers-reduced-motion:
+ *      no-preference` AND `html.has-js`. A reduced-motion visitor and a
+ *      visitor without JavaScript both get the finished page immediately.
+ *   2. `has-js` is set by an inline script in <head> before first paint, so
+ *      nothing flashes in at full opacity first.
+ * ------------------------------------------------------------------ */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --reveal-item-duration: 580ms;
+  --reveal-card-duration: 550ms;
+  --reveal-stagger: 90ms;
+  --reveal-delay: 80ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.has-js .reveal {
+    opacity: 0;
+    transition:
+      opacity var(--reveal-item-duration) var(--ease-out),
+      translate var(--reveal-item-duration) var(--ease-out),
+      scale var(--reveal-card-duration) var(--ease-out);
+    translate: 0 22px;
+  }
+
+  html.has-js .reveal-card {
+    translate: 0 28px;
+    scale: 0.98;
+  }
+
+  html.has-js .reveal.is-visible {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+
+  /* Staggered children. Written out rather than generated so the delay is
+     visible in devtools next to the values it mirrors. */
+  html.has-js .stagger > .reveal:nth-child(1) { transition-delay: calc(var(--reveal-delay) + 0 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(2) { transition-delay: calc(var(--reveal-delay) + 1 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(3) { transition-delay: calc(var(--reveal-delay) + 2 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(4) { transition-delay: calc(var(--reveal-delay) + 3 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(5) { transition-delay: calc(var(--reveal-delay) + 4 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(6) { transition-delay: calc(var(--reveal-delay) + 5 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(7) { transition-delay: calc(var(--reveal-delay) + 6 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(8) { transition-delay: calc(var(--reveal-delay) + 7 * var(--reveal-stagger)); }
+  html.has-js .stagger > .reveal:nth-child(n + 9) { transition-delay: calc(var(--reveal-delay) + 8 * var(--reveal-stagger)); }
+
+  /* The hero plays on load rather than on scroll. */
+  html.has-js .hero-in {
+    animation: hero-in var(--reveal-item-duration) var(--ease-out) both;
+  }
+
+  html.has-js .hero-in-1 { animation-delay: var(--reveal-delay); }
+  html.has-js .hero-in-2 { animation-delay: calc(var(--reveal-delay) + 1 * var(--reveal-stagger)); }
+  html.has-js .hero-in-3 { animation-delay: calc(var(--reveal-delay) + 2 * var(--reveal-stagger)); }
+  html.has-js .hero-in-4 { animation-delay: calc(var(--reveal-delay) + 3 * var(--reveal-stagger)); }
+  html.has-js .hero-in-5 { animation-delay: calc(var(--reveal-delay) + 4 * var(--reveal-stagger)); }
+  html.has-js .hero-in-panel {
+    animation: hero-in 700ms var(--ease-out) 350ms both;
+  }
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Disclosures: the navbar menu and the products panel. Mounted while open and
+   for the length of the close transition, so the exit is not cut off. */
+.disclosure {
+  transition:
+    opacity 160ms var(--ease-out),
+    translate 160ms var(--ease-out);
+}
+
+.disclosure[data-state='closed'] {
+  opacity: 0;
+  translate: 0 -6px;
+  pointer-events: none;
+}
+
+.disclosure-mobile {
+  transition: grid-template-rows 200ms var(--ease-out), opacity 200ms var(--ease-out);
+  grid-template-rows: 1fr;
+}
+
+.disclosure-mobile[data-state='closed'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.disclosure-mobile > * {
+  overflow: hidden;
+}
+
+@keyframes theme-icon-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+    rotate: -120deg;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .theme-icon {
+    animation: theme-icon-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Page enter / exit
+ * ------------------------------------------------------------------ */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 420ms var(--ease-out) both;
+}
+
+@keyframes flow-travel {
+  0% {
+    opacity: 0;
+    transform: translateY(-40%) scaleY(0.4);
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(140%) scaleY(1);
+  }
+}
+
+.flow-travel {
+  animation: flow-travel 3.2s ease-in-out infinite;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.soft-pulse {
+  animation: soft-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-anim body,
+  html.theme-anim *,
+  html.theme-anim *::before,
+  html.theme-anim *::after {
+    transition:
+      background-color 350ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 350ms cubic-bezier(0.4, 0, 0.2, 1),
+      color 350ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .page-enter,
+  .soft-pulse,
+  .flow-travel {
+    animation: none !important;
+  }
+}

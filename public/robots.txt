@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hilbras.dev/sitemap.xml
