@@ -240,10 +240,16 @@ the pairwise arithmetic — a 6.3× difference for one function call.
 `tests/e2e/` — 46 tests, run in Chromium and Firefox against the prerendered
 build with the production Content Security Policy enforced.
 
-| | Chromium | Firefox |
+| | This host | GitHub Actions, `ubuntu-latest` |
 | --- | --- | --- |
-| Result | 46 passed | 34 passed, 3 skipped, 0 failed |
-| Suite duration | ~1.9 min | ~11.9 min |
+| Result | 46 passed in Chromium; 34 passed + 3 skipped in Firefox, with 9 needing a retry | **89 passed, 3 skipped, 0 failed, no retries** |
+| Suite duration | ~1.9 min / ~11.9 min | 51.5 s for all 92 |
+
+92 tests is 46 run in each engine. The three skips are the Firefox
+`prefers-color-scheme` limitation. The retry difference between the two columns
+is the whole story about the host: on an idle runner every test passes first
+time, and locally at load 15-29 about one in five needs a second attempt. The
+retries exist for the second case and are doing nothing in the first.
 
 Four real differences, all recorded next to the tests that found them:
 
