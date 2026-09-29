@@ -43,6 +43,17 @@ const expectedOrigin = (process.env.SITE_URL ?? configuredDomain).replace(/\/+$/
 // Origins the document is allowed to reference: the site itself, the
 // organisation on GitHub, and any product's own deployed site.
 const allowedOrigins = new Set([configuredDomain, 'https://github.com', 'https://schema.org']);
+
+/**
+ * Every route the deployment should serve, read from the product registry.
+ *
+ * Read rather than listed, so a product added to `areas.ts` is checked the moment
+ * it is added. A route that is prerendered but never deployed is a link that
+ * 404s, and nothing upstream of this script would have noticed.
+ */
+const productBlock = areasSource.slice(areasSource.indexOf('export const products'));
+const productSlugs = [...productBlock.matchAll(/^    id: '([a-z0-9-]+)',$/gm)].map((m) => m[1]);
+const routes = ['/', '/products', ...productSlugs.map((slug) => `/products/${slug}`)];
 for (const source of [siteSource, areasSource]) {
   for (const match of source.matchAll(/href: '(https:[^']+)'/g)) {
     try { allowedOrigins.add(new URL(match[1]).origin); } catch { /* not a URL */ }
@@ -218,6 +229,59 @@ if (html) {
     }
   }
 }
+
+// --- 3b. Every route is actually deployed ---------------------------------
+// A prerendered route that the deployment does not serve is a link that 404s,
+// and nothing upstream of this script would have noticed.
+const routeProblems = [];
+for (const route of routes) {
+  let response;
+  try {
+    response = await fetch(`${base}${route}`, { redirect: 'follow' });
+  } catch (error) {
+    routeProblems.push(`${route}: request failed — ${error.message}`);
+    continue;
+  }
+  if (response.status !== 200) {
+    routeProblems.push(`${route}: HTTP ${response.status}`);
+    continue;
+  }
+
+  const document = await response.text();
+  const documentFlat = document.replace(/\s+/g, ' ');
+
+  // Its own canonical, not the homepage's. A product page serving the homepage
+  // canonical tells a search engine the two are the same document.
+  const canonical = documentFlat.match(/rel="canonical" href="([^"]+)"/)?.[1];
+  const wanted = `${expectedOrigin}${route === '/' ? '/' : route}`;
+  if (canonical !== wanted) routeProblems.push(`${route}: canonical is ${canonical}, expected ${wanted}`);
+
+  if (!/<div id="root"><div/.test(document)) routeProblems.push(`${route}: no prerendered markup`);
+
+  const pageText = (document.split('<div id="root">')[1] ?? '')
+    .replace(/<script[\s\S]*?<\/script>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (pageText.length < 500) {
+    routeProblems.push(`${route}: only ${pageText.length} characters of prerendered text`);
+  }
+
+  if (route.startsWith('/products/')) {
+    const slug = route.split('/').pop();
+    // Its own product node, and only its own. Describing all eleven on every
+    // page makes each page's structured data assert things about products it is
+    // not about.
+    const described = [...document.matchAll(/#product-([a-z0-9-]+)/g)].map((m) => m[1]);
+    if (!described.includes(slug)) routeProblems.push(`${route}: its JSON-LD does not describe ${slug}`);
+    if (described.length > 1) {
+      routeProblems.push(`${route}: JSON-LD describes ${described.length} products, expected only its own`);
+    }
+  }
+}
+
+for (const problem of routeProblems) failures.push(problem);
+notes.push(`routes       ${routes.length} checked, ${routeProblems.length ? 'with problems' : 'all serve their own canonical'}`);
 
 // --- 4. Security headers ---------------------------------------------------
 const headerResponse = await fetch(`${base}/`, { redirect: 'follow' });
