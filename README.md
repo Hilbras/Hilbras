@@ -30,6 +30,7 @@ not run JavaScript, then hydrated.
 - [Architecture](#architecture)
   - [How the build works](#how-the-build-works)
   - [Project structure](#project-structure)
+- [Routes](#routes)
 - [Data architecture](#data-architecture)
   - [The product model](#the-product-model)
   - [Adding a product](#adding-a-product)
@@ -106,7 +107,8 @@ pnpm test:e2e:ui        # playwright test --ui
 pnpm validate           # data-layer consistency, run inside the build
 pnpm seo                # robots.txt, sitemap.xml, site.webmanifest
 pnpm icons             # regenerate the application icons from favicon.svg
-pnpm smoke              # deployment checks against a URL
+pnpm smoke:local        # deployment checks against a server it starts itself
+pnpm smoke <url>        # the same checks against a deployed URL
 pnpm serve:headers      # dist/ with the real vercel.json headers
 
 pnpm check              # everything below — run this before pushing
@@ -123,6 +125,9 @@ pnpm check:all          # check + the browser suite
 typecheck → lint → tests + coverage → validator self-test
           → build → build-output assertions → header assertions → smoke
 ```
+
+It starts its own server for the smoke step, so it works on a clean machine with
+no setup. CI runs the same command rather than a parallel implementation of it.
 
 `pnpm check:all` adds the browser suite, which needs a build first and is slow
 enough to keep out of the inner loop. `pnpm check` is what CI's `check` job and
@@ -211,11 +216,17 @@ src/
 │   ├── NavigationParts.tsx   the actions cluster and the mobile menu
 │   └── useHoverIntent.ts     the two timers, and Escape
 ├── pages/
-│   └── HomePage.tsx          section order, and nowhere else
+│   ├── App.tsx               the page shell, and the only path switch
+│   ├── HomePage.tsx          the homepage sections, in order
+│   ├── ProductIndexPage.tsx  every product, grouped by owning area
+│   ├── ProductPage.tsx       one product
+│   ├── NotFoundPage.tsx      lists every product, since a stale link is likeliest
+│   └── pages.test.tsx
 ├── test/
 │   └── setup.ts              matchMedia stub, localStorage reset
 ├── entry-server.tsx          SSR entry; also the module the build scripts import
 ├── main.tsx                  hydration entry
+├── routes.ts                 the only place a path becomes a page
 └── index.css                 fonts, tokens, components, motion
 
 tests/
@@ -227,7 +238,8 @@ tests/
 │   ├── theme.spec.ts         preference, persistence, storage failure, reduced motion
 │   ├── accessibility.spec.ts skip link, focus rings, names, heading order
 │   ├── links.spec.ts         rel, target, announcements, dead anchors
-│   └── performance.spec.ts   canvas size, long tasks, layout shift, third parties
+│   ├── pages.spec.ts         every product page, the index, and the 404
+│   └── performance.spec.ts   canvas size, long tasks, layout shift, paint, third parties
 
 scripts/
 ├── prerender.mjs             markup injection, metadata generation, JSON-LD
@@ -238,6 +250,7 @@ scripts/
 ├── assert-security-headers.mjs  the policy is strong
 ├── serve-with-headers.mjs    dist/ with the real vercel.json headers
 ├── smoke.mjs                 deployment checks, against any URL
+├── smoke-local.mjs           the same, against a server it starts
 ├── verify-validator.mjs      proves the validator rejects bad data
 ├── verify-build-assertion.mjs  proves the build assertions fire
 └── og-template.html          editable source for public/og.png
@@ -254,6 +267,38 @@ public/
 `robots.txt`, `sitemap.xml` and `site.webmanifest` are **not** in `public/`. They
 are generated, because they were static files with the domain written into them
 and that is how an earlier domain change missed one of them.
+
+## Routes
+
+Thirteen documents, all prerendered:
+
+```text
+/                    the company homepage
+/products            the index, grouped by area
+/products/:product   one per product, 11 of them
+404.html             served with a 404 status, marked noindex
+```
+
+**There is no router, and there does not need to be one.** Every route is
+prerendered to its own HTML file, so a request for `/products/sdk` gets a
+complete document and there is nothing for a client-side router to intercept.
+`react-router-dom` would add a dependency and a navigation model to a site that
+does not navigate on the client.
+
+What is left is `src/routes.ts`: `resolveRoute(pathname)` is the only place a
+path becomes a page, and both sides use it — the prerender walks `allRoutes()` to
+decide what to write to disk, and the client passes `window.location.pathname`.
+Deciding the page twice is how a hydration mismatch happens.
+
+`allRoutes()` derives from the product registry, so **a product added to
+`areas.ts` produces a page, a sitemap entry and its own JSON-LD with no second
+edit.** `assert-build-output.mjs` and `smoke.mjs` both check every route, so a
+product with no page fails the build.
+
+Section links are root-relative — `/#ecosystem`, not `#ecosystem` — because they
+are followed from the product pages too, and a bare fragment resolves against
+whatever page the reader is on. `#main` is the exception: every page has a
+`main`, so the skip link stays on the current document.
 
 ## Data architecture
 
@@ -290,6 +335,12 @@ they do not restate it.
 `kind` is what the structured data keys off, so an operating system is not
 published as a developer application. `summary` exists because the full
 description does not fit in a navigation dropdown.
+
+A product page renders only what these fields hold, and each section is
+conditional on its data existing — so there is no empty "Use cases" heading on
+nine of eleven products. `features`, `useCases` and `integrations` are
+deliberately absent: inventing eleven products' feature lists is not something a
+website should do. They arrive the day the data supports them.
 
 ### Adding a product
 
@@ -571,9 +622,9 @@ field.
 ## Testing
 
 ```bash
-pnpm test            # 81 unit and component tests
+pnpm test            # 110 unit and component tests
 pnpm test:coverage   # with the thresholds enforced
-pnpm test:e2e        # 46 tests across Chromium and Firefox
+pnpm test:e2e        # 60 tests across Chromium and Firefox
 pnpm check:all       # everything
 ```
 

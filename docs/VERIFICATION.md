@@ -45,9 +45,9 @@ earlier verification used, which lived outside the repository and was lost when
 | --- | --- | --- |
 | Types | `pnpm typecheck` | clean, `strict` + `noUnusedLocals` + `noUnusedParameters` |
 | Lint | `pnpm lint` | clean |
-| Unit + component tests | `pnpm test` | 81 passed, 5 files |
+| Unit + component tests | `pnpm test` | 110 passed, 6 files |
 | Coverage gate | `pnpm test:coverage` | passes thresholds |
-| Browser tests | `pnpm test:e2e` | 46 tests, Chromium and Firefox |
+| Browser tests | `pnpm test:e2e` | 60 tests, Chromium and Firefox |
 | Deployment smoke | `pnpm smoke <url>` | passes against production |
 | Data validation | `pnpm validate` | no errors, no warnings |
 | Validator self-test | `pnpm verify:validator` | 9/9 cases caught |
@@ -165,6 +165,45 @@ their backdrop before computing, and Tailwind v4 mixes in oklab, not sRGB.
 
 **24 of 24 pass**, both themes.
 
+## Routes
+
+Thirteen prerendered documents plus a 404. Checked three ways: the build
+assertion, the smoke test, and the browser suite.
+
+| Route | Status | Canonical | JSON-LD | Prerendered text |
+| --- | --- | --- | --- | --- |
+| `/` | 200 | its own | 13 nodes | 13,116 chars |
+| `/products` | 200 | its own | 13 nodes | present |
+| `/products/:id` × 11 | 200 | its own | 3 nodes | present |
+| `/products/ghostware` | **404** | — | — | 404 document, `noindex` |
+
+A product page publishes three JSON-LD nodes — the organisation, the website and
+its own product — rather than all thirteen. Describing every product on every
+page would make each page's structured data assert things about products it is
+not about.
+
+Every route's description is unique: 13 distinct descriptions across 13 routes,
+which the smoke test asserts. Eleven previously would not have existed at all.
+
+## Paint
+
+The homepage `h1` is the largest contentful paint on the site's most important
+page, and an element at `opacity: 0` is not painted at all.
+
+| | `h1` in the document | Fully opaque |
+| --- | --- | --- |
+| Before | 351 ms | **1772 ms** |
+| After | at first frame | **at first frame** |
+
+The hero played on load with `animation-fill-mode: both`, so the heading sat at
+zero opacity through a 170 ms delay and a 580 ms fade. The fix is the same shape
+as the page-enter animation removed in v1.0.0: the hero animates `translate` only.
+The slide survives, because motion is not what costs a paint.
+
+`Reveal` had the same fragility for a different reason — content already in the
+viewport depended on an observer's scheduling. It now checks its own geometry
+first. Measured, the product pages went from observer-dependent to 103 ms.
+
 ## Performance
 
 Cold cache, local server, Chromium, paint and layout timings from the Performance
@@ -237,8 +276,10 @@ the pairwise arithmetic — a 6.3× difference for one function call.
 
 ## Browsers
 
-`tests/e2e/` — 46 tests, run in Chromium and Firefox against the prerendered
-build with the production Content Security Policy enforced.
+`tests/e2e/` — 60 tests, run in Chromium and Firefox against the prerendered
+build with the production Content Security Policy enforced. Thirteen routes are
+covered: the homepage, the product index, all eleven product pages, and the
+404.
 
 | | This host | GitHub Actions, `ubuntu-latest` |
 | --- | --- | --- |
@@ -273,7 +314,7 @@ preference noticed the value coming back after `localStorage.clear()`.
 
 ## Tests
 
-81 unit and component tests across five files, plus 46 browser tests.
+110 unit and component tests across six files, plus 60 browser tests.
 
 - **Data and logic** — unique ids and names, ids safe as URL fragments, every
   product in a real area, every area referencing a real product, repository URLs
