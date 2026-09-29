@@ -286,3 +286,12 @@ the descriptions and links on the cards are taken from them. Three products —
 Hilbras Gateway, Hilbras OS, and HilGit — have no public repository and no
 deployed site, and their cards say "No public release yet" rather than linking
 somewhere that does not exist.
+
+---
+
+## Follow-on verification
+
+`docs/VERIFICATION.md` records what was measured on the current build — the
+Content Security Policy, responsive behaviour, contrast, keyboard navigation, the
+particle-canvas finding, and the tests — with the commands that reproduce each
+number and a list of what could not be checked.

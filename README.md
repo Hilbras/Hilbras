@@ -1,6 +1,6 @@
 # Hilbras
 
-The public homepage for **Hilbras** — the company behind a family of independent
+The public website for **Hilbras** — the company behind a family of independent
 software products.
 
 ```text
@@ -9,15 +9,51 @@ Build. Connect. Create.
 
 > Hilbras is not a single product. It is a technology ecosystem.
 
-This is a static, single-page site. One route, eleven products, six technology
-areas, and no client-side router.
+One route, eleven products, six technology areas, and no client-side router. The
+page is prerendered to static HTML so it is readable in full by crawlers that do
+not run JavaScript, then hydrated.
+
+- **Purpose.** To be the entry point to the Hilbras ecosystem: what the company
+  is, what it builds, and where each product sits relative to the others.
+- **Audience.** Developers evaluating the SDK and infrastructure, people looking
+  for a platform to build on, and contributors arriving from a repository.
+- **Not a marketing microsite.** No pricing, no testimonials, no FAQ, no stock
+  photography. The content is the product list and the taxonomy.
+
+---
+
+## Contents
+
+- [Stack](#stack)
+- [Getting started](#getting-started)
+- [Commands](#commands)
+- [Architecture](#architecture)
+  - [How the build works](#how-the-build-works)
+  - [Project structure](#project-structure)
+- [Data architecture](#data-architecture)
+  - [The product model](#the-product-model)
+  - [Adding a product](#adding-a-product)
+  - [Adding a technology area](#adding-a-technology-area)
+  - [Product status](#product-status)
+  - [Changing the domain](#changing-the-domain)
+- [Design language](#design-language)
+- [Accessibility](#accessibility)
+- [SEO and structured data](#seo-and-structured-data)
+- [Security](#security)
+- [Performance](#performance)
+- [Testing](#testing)
+- [CI/CD](#cicd)
+- [Deploying](#deploying)
+- [Contributing](#contributing)
+- [Releasing](#releasing)
+- [Reference](#reference)
 
 ---
 
 ## Stack
 
-Chosen to match the design system in `../OmniHilbras` so the two products share a
-toolchain as well as a look.
+Chosen to share a toolchain with the design reference in `../OmniHilbras`, so the
+two share a way of working as well as a look.
 
 | Concern | Choice |
 | --- | --- |
@@ -28,142 +64,270 @@ toolchain as well as a look.
 | Icons | `lucide-react` for UI, inline SVG for product marks |
 | Types | TypeScript 5.9, `strict` + `noUnusedLocals` + `noUnusedParameters` |
 | Lint | ESLint 10 flat config, `typescript-eslint`, `react-hooks` |
+| Unit tests | Vitest 3 with happy-dom, `@testing-library/react`, v8 coverage |
 | Fonts | Geist + Geist Mono, self-hosted, `latin` and `latin-ext` subsets |
 | Rendering | Prerendered to static HTML, then hydrated |
+| Hosting | Vercel, static output |
 
 No router, no state library, no CSS-in-JS, no component framework, no animation
-library, no analytics. The output is one HTML file, one stylesheet, one script,
-and four font files.
+library, no analytics, no third-party requests. The deployed output is one HTML
+file, one stylesheet, one script, four font files, an SVG icon, a PNG social card,
+and three generated text files.
 
-## Commands
+## Getting started
+
+Requires Node 24 and pnpm 12.
 
 ```bash
 pnpm install
 pnpm dev          # http://localhost:5174
-pnpm typecheck    # tsc --noEmit
-pnpm lint         # eslint .
-pnpm build        # typecheck + client build + SSR build + prerender -> dist/
-pnpm preview      # serve dist/ locally
 ```
+
+`pnpm-workspace.yaml` carries a `allowBuilds` entry for `esbuild`, which pnpm 12
+requires before it will run a dependency's install script. Committing it is what
+makes a fresh install reproduce.
+
+## Commands
+
+```bash
+pnpm dev                # vite dev server
+pnpm build              # the full production build -> dist/
+pnpm preview            # serve dist/ locally
+pnpm typecheck          # tsc --noEmit
+pnpm lint               # eslint .
+pnpm test               # vitest run
+pnpm test:watch         # vitest
+pnpm test:coverage      # vitest run --coverage (gated)
+pnpm validate           # data-layer consistency, run inside the build
+pnpm seo                # robots.txt, sitemap.xml, site.webmanifest
+pnpm serve:headers      # dist/ with the real vercel.json headers, for testing CSP
+
+pnpm check              # everything below, in order — run this before pushing
+pnpm assert:build       # the built document is crawlable
+pnpm assert:headers     # the security policy is strong
+pnpm assert:content     # the numbers in the copy match the data
+
+pnpm verify:validator   # proves assert-style checks actually fire
+pnpm verify:build-assertion
+```
+
+`pnpm check` is the whole gate:
+
+```text
+typecheck → lint → tests + coverage → validator self-test
+          → build → build-output assertions → header assertions → content assertions
+```
+
+## Architecture
+
+```text
+React components
+      ↓
+src/data/*        one source of truth: products, areas, copy, domain
+      ↓
+Vite client build          Vite SSR build (--mode ssr)
+      ↓                          ↓
+dist/assets/*              .ssr/entry-server.mjs
+                                 ↓
+                        validate → seo → prerender
+                                 ↓
+                    dist/index.html  (static, crawlable)
+                                 ↓
+                            React hydrates on top
+```
+
+Three properties this arrangement is chosen for:
+
+1. **Adding a product is a data edit.** One record in `src/data/areas.ts` reaches
+   the grid, the navigation, the footer, the connection map, the structured data,
+   and the sitemap. No component changes.
+2. **The first paint is real markup.** The prerender step exists because search
+   engines run JavaScript but GPTBot, ClaudeBot, PerplexityBot, and most
+   archiving tools do not.
+3. **One domain, one description.** Every absolute URL and every text field in
+   `<head>` is generated from `site.domain` and `site` at build time, so they
+   cannot disagree.
 
 ### How the build works
 
-`pnpm build` runs three steps:
+`pnpm build` runs five steps:
 
 1. **`build:client`** — the browser bundle and the HTML shell.
 2. **`build:server`** — `vite build --mode ssr` compiles `src/entry-server.tsx`
    to a plain Node module. The app was already server-renderable: the only
    browser APIs in play sit behind `useEffect`, which never runs on a server.
-3. **`prerender`** — `scripts/prerender.mjs` imports that module, renders the
-   page, writes the markup into `dist/index.html`, rewrites every absolute URL
-   from `site.domain`, and injects the JSON-LD graph. React then hydrates that
-   markup instead of discarding it.
+3. **`validate`** — `scripts/validate-data.mjs` imports that same compiled module
+   and fails the build if the data layer is inconsistent. It reads the bundle
+   rather than the sources so it checks exactly what is about to be prerendered.
+4. **`seo`** — writes `robots.txt`, `sitemap.xml` and `site.webmanifest` into
+   `dist/` from `site.domain` and `site.lastModified`.
+5. **`prerender`** — renders the page into `dist/index.html`, rewrites every
+   absolute URL and description, injects the JSON-LD graph once, and removes the
+   compiled bundle.
 
-Step 3 is what makes the site readable by crawlers that do not run JavaScript —
-GPTBot, ClaudeBot, PerplexityBot, and most archiving tools. Before it, the built
-HTML held the metadata and a short `<noscript>` summary but no page content. After
-it, the full document ships as static HTML.
+Steps 3 to 5 all read `.ssr/entry-server.mjs`, so it must outlive them; step 5
+owns the cleanup.
 
-## Deploying
-
-`vercel.json` pins the framework, build command, output directory, and cache
-headers, so a Vercel project needs no further configuration.
-
-```bash
-vercel link
-vercel --prod
-```
-
-Or connect the repository in the Vercel dashboard. **The repository is currently
-private**, so a Vercel Git integration would need the project added to that
-account explicitly, or the repository made public.
-
-Two things to change before a real launch:
-
-- **The domain.** `hilbras.vercel.app` is set in one place — `site.domain` in
-  `src/data/site.ts` — and the prerender step rewrites the canonical, Open Graph,
-  and Twitter URLs from it. `public/robots.txt` and `public/sitemap.xml` are
-  static and need editing by hand, as does the footer text inside
-  `scripts/og-template.html` if you regenerate the social image.
-- **The social image.** `public/og.png` is a committed artifact.
-  `scripts/og-template.html` is its editable source; render it at 1200×630 to
-  regenerate.
-
-## Structure
+### Project structure
 
 ```text
 src/
 ├── components/
-│   ├── ui/            Mark, ProductMark, StatusPill, Reveal, Section, GitHubMark
-│   ├── Hero.tsx           Navbar, Hero, About, Ecosystem, Products,
-│   ├── Navbar.tsx         ConnectionMap, Technology, Audiences,
-│   ├── …                  Philosophy, Vision, FinalCta, Footer
-│   ├── ParticleField.tsx  the drifting node field behind the page
+│   ├── ui/
+│   │   ├── Mark.tsx          11 product marks + the Hilbras mark, inline SVG
+│   │   ├── ProductMark.tsx   the mark on a shared 24-unit grid
+│   │   ├── ProductLink.tsx   the single place a product link is built
+│   │   ├── StatusPill.tsx    the status pill, full and compact
+│   │   ├── AssuranceRow.tsx  the two claim rows, plain and with icons
+│   │   ├── Reveal.tsx        Reveal + useDisclosure — the no-library motion
+│   │   ├── Section.tsx       <section> + SectionHeader
+│   │   └── GitHubMark.tsx
+│   ├── Hero.tsx  Navbar.tsx  About.tsx  Ecosystem.tsx  Products.tsx
+│   ├── ConnectionMap.tsx  Technology.tsx  Audiences.tsx  Philosophy.tsx
+│   ├── Vision.tsx  FinalCta.tsx  Footer.tsx
+│   ├── ParticleField.tsx     the drifting node field behind the page
 │   ├── ThemeToggle.tsx
-│   └── StructuredData.tsx JSON-LD, built from the product data
+│   └── components.test.tsx
 ├── data/
-│   ├── areas.ts        products, areas, statuses, helpers
-│   └── site.ts         company, navigation, audiences, principles, vision
+│   ├── areas.ts              products, areas, statuses, kinds, helpers
+│   ├── site.ts               company, domain, navigation, copy, audiences
+│   ├── links.ts              productHref / isExternalHref / externalRel
+│   ├── structuredData.ts     the JSON-LD graph
+│   ├── validation.ts         the rules the build enforces
+│   └── *.test.ts
 ├── pages/
-│   └── HomePage.tsx    section order
-└── index.css           fonts, tokens, components, motion
+│   └── HomePage.tsx          section order, and nowhere else
+├── test/
+│   └── setup.ts              matchMedia stub, localStorage reset
+├── entry-server.tsx          SSR entry; also the module the build scripts import
+├── main.tsx                  hydration entry
+└── index.css                 fonts, tokens, components, motion
+
+scripts/
+├── prerender.mjs             markup injection, metadata generation, JSON-LD
+├── generate-seo.mjs          robots / sitemap / manifest
+├── validate-data.mjs         fails the build on inconsistent data
+├── assert-build-output.mjs   the built document is crawlable
+├── assert-security-headers.mjs  the policy is strong
+├── assert-content.mjs        the numbers in the copy match the data
+├── serve-with-headers.mjs    dist/ with the real vercel.json headers
+├── verify-validator.mjs      proves the validator rejects bad data
+├── verify-build-assertion.mjs  proves the build assertions fire
+└── og-template.html          editable source for public/og.png
+
+public/
+├── fonts/                    4 woff2 subsets, self-hosted
+├── favicon.svg  og.png
+└── theme-init.js             theme + has-js, before first paint
+
+.github/workflows/ci.yml
 ```
 
-Section order lives in `src/pages/HomePage.tsx` and nowhere else.
+`robots.txt`, `sitemap.xml` and `site.webmanifest` are **not** in `public/`. They
+are generated, because they were static files with the domain written into them
+and that is how an earlier domain change missed one of them.
 
-## Adding a product
+## Data architecture
 
-One edit, in `src/data/areas.ts`:
+Everything the page says about the company is in `src/data`. Components read it;
+they do not restate it.
+
+| File | Holds |
+| --- | --- |
+| `areas.ts` | products, technology areas, status labels and definitions, schema mapping |
+| `site.ts` | name, domain, tagline, headline, description, navigation, audiences, principles, vision, footer groups |
+| `links.ts` | the one rule for where a product link goes |
+| `structuredData.ts` | builds the JSON-LD graph from `areas.ts` and `site.ts` |
+
+### The product model
 
 ```ts
 {
-  id: 'newproduct',
+  id: 'newproduct',              // kebab-case; used as a URL fragment
   name: 'New Product',
-  area: 'platforms',          // the area that owns it
-  description: 'One sentence on what it does and why it exists.',
-  status: 'alpha',            // stable | beta | alpha | building
-  mark: 'panel',              // a MarkId from components/ui/Mark.tsx
+  area: 'platforms',             // the area that owns it
+  description: 'Two or three sentences. Shown on the product card.',
+  summary: 'One line. Shown in the navigation dropdown.',
+  kind: 'platform',              // library | service | platform | application | system
+  status: 'alpha',               // stable | beta | alpha | building
+  mark: 'panel',                 // a MarkId from components/ui/Mark.tsx
   repository: 'https://github.com/Hilbras/NewProduct',  // omit if not public
-  href: 'https://example.dev',                         // omit if not deployed
-  featured: true,             // optional: gives it the wide card
+  documentation: 'https://github.com/Hilbras/NewProduct#readme',
+  href: 'https://newproduct.dev',                        // omit if not deployed
+  platform: 'Linux',             // omit if cross-platform
+  featured: true,                // gives it the wide card
 }
 ```
 
-Add the id to the owning area's `products` array. The product grid, the ecosystem
-cards, the navigation dropdown, the mobile menu, the footer, the connection map,
-and the JSON-LD graph all pick it up from there. Nothing else changes. The count
-under the grid ("8 of the 11 projects are public today") is derived too, so it
-cannot go stale.
+`kind` is what the structured data keys off, so an operating system is not
+published as a developer application. `summary` exists because the full
+description does not fit in a navigation dropdown.
 
-If the product belongs to a second area, list its id in that area's `products`
-too. The count, the chips, and the diagram follow automatically.
+### Adding a product
 
-## Adding a technology area
+1. Add the record above to `products` in `src/data/areas.ts`.
+2. Add its id to the owning area's `products` array. A product can be in two.
+3. Add a mark to `components/ui/Mark.tsx` if it needs its own geometry.
 
-Same file. Add an entry to `areas` with a `mark`, then add its `id` to the
-`AreaId` union. `components/Technology.tsx` needs one entry in its `detail` map
-for the capability list; the rest is derived.
+Nothing else changes. The product grid, the ecosystem cards, the navigation
+dropdown, the mobile menu, the footer, the connection map, the JSON-LD graph, and
+the counts all derive from the data.
+
+`pnpm check` will tell you if the record is malformed, and `pnpm assert:content`
+will tell you if a heading still states the old number of products.
+
+### Adding a technology area
+
+Same file. Add an entry to `areas` with a `mark`, add its id to the `AreaId`
+union, then add one entry to the `detail` map in `components/Technology.tsx` for
+the capability list. Everything else is derived.
+
+### Product status
+
+Four levels, and they mean what they say. A product without a public release says
+so on its card rather than linking nowhere.
+
+| Status | Means |
+| --- | --- |
+| `stable` | Publicly released. Interfaces may still gain additive changes. |
+| `beta` | Usable and documented, but the interface is still settling. |
+| `alpha` | Public and working, with parts of the interface still changing. |
+| `building` | Under active construction. Nothing here is a supported release yet. |
+
+The definition is attached to the pill as a `title`, so a reader is never left to
+infer whether `Alpha` means production-ready.
+
+### Changing the domain
+
+`site.domain` in `src/data/site.ts` is the only place. The prerender rewrites the
+canonical, Open Graph and Twitter URLs from it; `generate-seo.mjs` writes robots,
+sitemap and manifest from it; the JSON-LD builds every `@id` and `url` from it;
+and `assert-build-output.mjs` fails if any unexpected external origin appears in
+the output.
+
+Before switching, also regenerate the social image — its footer text lives in
+`scripts/og-template.html`.
 
 ## Design language
 
-Tokens live at the top of `src/index.css` and are defined twice — once for
-`[data-theme='light']`, once for `[data-theme='dark']` — then exposed to Tailwind
-through `@theme inline`. A component never hardcodes a colour; it uses
-`text-muted`, `border-line`, `bg-gold-soft`, and so on.
+Tokens live at the top of `src/index.css`, defined once per theme, then exposed
+to Tailwind through `@theme inline`. A component never hardcodes a colour or a
+colour-bearing gradient; there are **zero hex values outside the two theme
+declarations**.
 
 ```text
 --bg / --bg-soft / --surface / --surface-2   surfaces, warm neutrals
 --text / --muted / --line / --line-strong    text and hairlines
 --gold / --gold-bright / --gold-mid         the single accent ramp
 --gold-text / --gold-ink / --gold-soft      accessible gold, on-gold ink, tint
---glow / --success / --danger / --shadow    focus, state, elevation
+--gold-border / --glow / --success / --danger / --shadow
 ```
 
-Component classes follow the same short vocabulary as the rest of the family:
-`.shell`, `.section-band`, `.section-pad`, `.card`, `.card-glow`, `.btn-gold`,
-`.btn-ghost`, `.btn-quiet`, `.eyebrow`, `.eyebrow-dot`, `.mono-label`,
-`.section-title`, `.display-title`, `.gold-text`, `.hairline`, `.grid-wash`,
-`.bg-glow`, `.nav-blur`, `.node`, `.flow-line`, `.skip-link`, `.footer-link`.
+Component classes: `.shell`, `.section-band`, `.section-pad`, `.card`,
+`.card-glow`, `.btn-gold`, `.btn-ghost`, `.btn-quiet`, `.eyebrow`, `.eyebrow-dot`,
+`.mono-label`, `.section-title`, `.display-title`, `.gold-text`, `.hairline`,
+`.grid-wash`, `.bg-glow`, `.glow-wash`, `.nav-blur`, `.node`, `.flow-line`,
+`.disclosure`, `.skip-link`, `.footer-link`, `.reveal`, `.noscript-fallback`.
 
 ### Deliberate departures from the reference
 
@@ -172,92 +336,302 @@ Component classes follow the same short vocabulary as the rest of the family:
 | `--gold-ink` (light) | `#ffffff` → `#1c1704` | White on `#d4af37` is 2.1:1 and fails WCAG AA for a 14px label. Dark ink is 8.5:1. |
 | `--gold-text` (light) | `#8a6d12` → `#7d620f` | The eyebrow pill is 11px; at the old value it measured 4.3:1 against its own tint. Now 5.0:1. |
 | `--gold-mid` (new) | — | The display gradient needed a mid stop that clears 3:1 as large text. `--gold-bright` did not. |
+| `--gold-border` (new) | — | The gold button's own border, previously a hardcoded `color-mix` against black in the middle of the file. |
 | `--success` (light) | `#177d47` → `#0f5c38` | Status pills tint their own background 10% with this colour, which dropped the 10px "Stable" label to 4.1:1. |
 | `:focus-visible` | `--gold` → `--gold-text` | Pure gold is 2.1:1 on the light background; a focus ring must clear 3:1. |
 
-Everything else — the ramp, the type scale, the radii, the easing curve, the
-reveal timings, the card anatomy and its hover glow — is shared with OmniHilbras
-on purpose. The only structural departure is that motion is CSS rather than a
-library, which changed no visible behaviour and removed a dependency.
+Two structural departures, both measured:
+
+- **No animation library.** Scroll reveals are a CSS transition toggled by one
+  `IntersectionObserver`; the two navbar disclosures use `useDisclosure`. Bundle
+  127 kB → 85 kB gzipped, no visible change.
+- **No page-enter animation.** It faded the whole document in over 420 ms, which on
+  a prerendered page hides content the browser has already painted. It also left
+  `transform` on the document wrapper, which makes an ancestor the containing
+  block for `position: fixed` descendants — so the background canvas sized itself
+  to the whole 10,584 px document instead of the 900 px viewport. Removing it took
+  the canvas backing store from 58.1 MB to 4.9 MB and the median frame from
+  92.3 ms to 27.1 ms at 4× CPU throttle.
+
+Everything else — the ramp, the type scale, the radii, the easing, the reveal
+timings, the card anatomy and its hover glow — is shared with the reference on
+purpose.
 
 ## Accessibility
 
-Verified, not assumed. Lighthouse scores 100 for accessibility, best practices
-and SEO. The specific claims behind that:
+Verified, not assumed.
 
-- One `h1`; section headings are `h2`; card headings are `h3`; no level is skipped.
+- One `h1` outside `<noscript>`; section headings are `h2`; card headings `h3`; no
+  level skipped. `assert-build-output.mjs` fails the build otherwise.
 - Every `<section>` is named by its own heading via `aria-labelledby`.
 - The skip link is the first tab stop and moves focus to `<main tabindex="-1">`.
 - The products menu is a disclosure button: click toggles, `Escape` closes and
   returns focus, blur closes, hover opens with an intent delay. Focus alone does
   not open it, so the first `Enter` cannot immediately undo it.
-- The theme choice is applied before first paint from `localStorage`, and the
-  350 ms colour transition is scoped to the switch moment only.
-- Under `prefers-reduced-motion: reduce` no keyframe animation survives, smooth
-  scrolling is off, and all 61 reveals render at full opacity. The hidden state
-  itself lives inside a `prefers-reduced-motion: no-preference` block, so it is
-  not merely animated away — it is never applied.
-- With JavaScript disabled the page still renders. The reveal hidden state is
-  gated on `html.has-js`, and the prerendered markup means the full document is
-  present — not just the `<noscript>` summary.
-- Hydration is clean: no warnings, no errors, and React reuses the server DOM
-  rather than replacing it. The theme toggle's icon is selected by CSS from
-  `data-theme` rather than from React state, specifically so the server and
-  client trees cannot disagree about a `localStorage` value.
+- The theme choice is applied before first paint from `localStorage`. The toggle's
+  icon is selected by CSS from `data-theme` rather than from React state, so the
+  server and client trees cannot disagree about a `localStorage` value. Its
+  `aria-label` is static for the same reason.
+- Under `prefers-reduced-motion: reduce` no keyframe survives, smooth scrolling is
+  off, and all 61 reveals render at full opacity. The hidden state lives inside a
+  `prefers-reduced-motion: no-preference` block, so it is never applied rather than
+  animated away.
+- With JavaScript disabled the page still renders in full: the reveal hidden state
+  is gated on `html.has-js`, and the prerendered markup is present, not just the
+  `<noscript>` summary.
+- Hydration is clean — no warnings, and React reuses the server DOM rather than
+  replacing it.
+- Every link that opens a new tab carries `rel="noreferrer noopener"` and a
+  screen-reader announcement. Internal anchors never open in a new tab.
 - Product marks are inline SVG with `aria-hidden="true"`; each product is named
-  once, in its chip, via `.sr-only`. No product mark depends on a system font.
-- Measured contrast against composited backgrounds, both themes, all 13 pairs at
-  or above their WCAG threshold — 5.0:1 to 17.3:1 for body and label text, 8.5:1
-  for the gold button label, 5.5:1 for the focus ring.
+  once, in text. No mark depends on a system font.
+- Contrast measured against composited backgrounds in both themes: 5.0:1 to 17.3:1
+  for body and label text, 8.5:1 for the gold button, 5.5:1 for the focus ring.
 
-## SEO
+## SEO and structured data
 
-`index.html` carries the title, description, canonical, Open Graph and Twitter
-card, and a copy of the organisation JSON-LD so crawlers that do not run
-JavaScript still see it. The rendered page adds a `SoftwareApplication` node per
-product, built from the same data the cards render from. `public/robots.txt` and
-`public/sitemap.xml` are committed.
+`index.html` holds the tags; the prerender fills in their contents from
+`src/data/site.ts`. The title, the meta description, both Open Graph and Twitter
+descriptions, the site name and the image alt are all generated. This matters
+more than it sounds: they were three hand-written descriptions that did not match
+each other, so the same page announced itself three different ways depending on
+who was reading.
+
+Generated at build time:
+
+- `robots.txt` — allows everything, points at the sitemap.
+- `sitemap.xml` — one route, `lastmod` from `site.lastModified`. Product pages
+  belong here when they exist.
+- `site.webmanifest` — name, colours, icons.
+
+Structured data is one JSON-LD block in `<head>`, built from the same data the
+cards render from, so it cannot drift from what a visitor sees:
+
+| Product kind | `@type` | `applicationCategory` |
+| --- | --- | --- |
+| `library` | `SoftwareSourceCode` | `DeveloperLibrary` |
+| `service` | `SoftwareApplication` | `DeveloperApplication` |
+| `platform` | `SoftwareApplication` | `BusinessApplication` |
+| `application` | `SoftwareApplication` | `ConsumerApplication` |
+| `system` | `OperatingSystem` | `OperatingSystem` |
+
+Plus one `Organization` and one `WebSite`, `codeRepository` and `hasPart` where
+they exist, and `creativeWorkStatus` carrying maturity. Hilbras OS publishes
+`operatingSystem: Linux` rather than claiming to be cross-platform.
+
+`assert-build-output.mjs` checks the document has a doctype, a lang, a
+description, a canonical, Open Graph and Twitter tags, a manifest link and the
+external theme script; that the prerender actually injected the app; that there
+is enough static text and that five distinct fragments of the page are present in
+it; one `h1`; no skipped heading level; no dead anchors; exactly one JSON-LD
+block that parses; the generated files; and that the canonical domain is the
+configured one.
+
+## Security
+
+Headers live in `vercel.json` and are asserted by `assert-security-headers.mjs`,
+which checks them for their properties rather than an exact string — so tightening
+the policy does not break the build and weakening it does.
+
+| Header | Value |
+| --- | --- |
+| `Content-Security-Policy` | `default-src 'self'; …; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; …` |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
+| `Permissions-Policy` | twenty device APIs disabled, none of which the site uses |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `X-Frame-Options` | `SAMEORIGIN` |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `X-DNS-Prefetch-Control` | `on` |
+
+The policy has **no exceptions**. Two things had to move for it:
+
+- **The theme bootstrap.** It was an inline `<script>` in `<head>`. An inline
+  script needs a nonce or a hash, and a static host issues no per-request nonce —
+  so the usual outcomes were a hash to keep in sync with every edit, or
+  `unsafe-inline`, which removes the protection while appearing not to. Nineteen
+  lines moved to `public/theme-init.js`, which is same-origin and shares a
+  connection the stylesheet already uses. It stays a blocking script because it
+  has to run before first paint.
+- **Inline styles.** `style-src 'self'` blocks `style` attributes, which surfaced
+  two places reaching past the design system: the gold wash behind the featured
+  card and the closing CTA, which was the same radial gradient written twice as
+  `style={{}}` and is now `.glow-wash`; and the `<noscript>` fallback, which is
+  now `.noscript-fallback` in the stylesheet — so the policy holds for a visitor
+  with scripting disabled, which is when a broken fallback matters most.
+
+Hashed assets and fonts are served `immutable` for a year; the theme script for an
+hour, so a change reaches people without waiting on a deploy.
+
+Test it locally rather than finding out in production:
+
+```bash
+pnpm serve:headers     # dist/ on :4175 with the real vercel.json headers
+```
 
 ## Performance
 
 ```text
-HTML           108.5 kB    (96.9 kB of it prerendered markup)
-CSS             39.8 kB    (8.5 kB gzipped)
-JS             278.9 kB    (85.5 kB gzipped)
-Fonts            83.7 kB    (4 files, latin subsets preloaded)
-Images            0 B       (no raster asset is on the page)
+HTML           110.8 kB   (97.6 kB of it prerendered markup)
+CSS             39.5 kB   ( 8.5 kB gzipped)
+JS             273.4 kB   (84.8 kB gzipped)
+Fonts           81.8 kB   (4 files, latin subsets preloaded)
+Images          28.4 kB   (one PNG, the social card; nothing on the page)
 Third parties     0
 Requests          6
 ```
 
-Three decisions did most of that work:
+Four decisions did most of that work:
 
-- **The animation library is gone.** Scroll reveals are a CSS transition toggled
-  by one `IntersectionObserver`, and the two navbar disclosures keep themselves
-  mounted for the length of their close transition. That removed `motion` and
-  took the bundle from 127 kB to 85 kB gzipped, with no visible change. It also
-  made the page *more* robust: the hidden state now depends on a CSS media query
-  rather than on hydration.
-- **Fonts are self-hosted.** Geist and Geist Mono ship as four subset files in
-  `public/fonts` with the two latin subsets preloaded. This removes a
-  render-blocking third-party stylesheet from the critical path and keeps
-  visitor IPs off a third party. The page now makes zero cross-origin requests.
-- **The page ships as static HTML.** The document is prerendered, so first paint
-  does not wait on the bundle.
+- **The page ships as static HTML.** First paint does not wait on the bundle.
+- **No animation library.** Reveals are a CSS transition toggled by one
+  observer. This also made the page more robust: the hidden state now depends on
+  a CSS media query rather than on hydration.
+- **Fonts are self-hosted**, removing a render-blocking third-party stylesheet
+  from the critical path and keeping visitor IPs off a third party. The page
+  makes zero cross-origin requests.
+- **The canvas is correctly sized.** See the page-enter note under
+  [design language](#deliberate-departures-from-the-reference).
 
-The drifting particle field pauses when the tab is hidden, and scroll reveals run
-once and never replay.
+The particle field is measured, not guessed at. `Math.sqrt` instead of
+`Math.hypot` on the pair loop is a 6.3× difference (0.229 ms → 0.037 ms per frame
+at 72 particles). A uniform spatial grid was benchmarked and **not** adopted: at
+0.173 ms it was slower than the plain loop it was meant to improve, because 72
+particles is 2,556 pairs and the counting sort costs more than the pairs it
+skips. It would only pay off in the thousands, and the numbers are in the source
+so nobody re-adds it. It also runs at 30 fps rather than 60 — invisible at 0.2 px
+per frame — uses 30 particles on coarse pointers, and observes the canvas with a
+`ResizeObserver` so a mobile browser collapsing its URL bar does not rebuild the
+field.
 
-## Adding pages later
+## Testing
 
-The data model does not assume this is the only page. Product records already
-carry `href` and `repository`, so a product page can take over the link without a
-schema change. `HomePage` is one exported component behind no router, which means
-adding `react-router-dom` later is additive — the section components are already
-addressable by their own `id`.
+```bash
+pnpm test              # 56 tests
+pnpm test:coverage     # with the thresholds enforced
+```
+
+Three layers, and the first is the one that matters most because a regression
+there is silent.
+
+**Data and logic** (`src/data/*.test.ts`) — unique ids and names, ids safe as URL
+fragments, every product in a real area, every area referencing a real product,
+repository URLs inside the organisation, nothing marked stable without something
+publicly released, link helpers, and the structured data: one node per product,
+every identifier built from the configured domain, each product typed by what it
+is rather than as a developer application, an operating system that is not
+published as cross-platform, no `softwareVersion` abuse, and nothing that could
+break out of the script element.
+
+**Components** (`src/components/components.test.tsx`) — the status pill states a
+level and explains it, the product card says plainly when there is no public
+release, the navigation disclosure's `aria-expanded` and focus return, the theme
+toggle's static label and storage write, the footer, the connection map, and the
+whole page's link integrity.
+
+**Self-tests** — `verify:validator.mjs` breaks the product data nine different
+ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts the
+built document six ways and asserts the assertions reject each. A check nobody
+has seen fail is not known to work.
+
+Coverage is gated on `areas.ts`, `links.ts` and `structuredData.ts`.
+`validation.ts` is deliberately excluded rather than the bar being lowered: its
+error branches only execute on invalid data, which is the self-test's job.
+
+### A race the tests found
+
+The navigation disclosure test failed intermittently — once in three runs, then
+once in eight. It was two bugs stacked, both real:
+
+- `useDisclosure`'s `close` did not cancel the pending open frame. Opening
+  schedules a `requestAnimationFrame` so the browser has the closed styles to
+  animate from; a close landing in the same tick was undone when that frame fired,
+  leaving a panel rendered fully open while `aria-expanded` said it was closed —
+  content a screen reader has been told is hidden and a keyboard user can still
+  tab into.
+- The navbar's hover-intent timer was why it kept happening. A pointer over the
+  trigger means `mouseenter` already queued an open, and it landed ~80 ms after
+  `Escape` dismissed the panel. Click Products, press Escape without moving the
+  mouse, and it comes back.
+
+Both fixed, with a test that asserts the close wins deterministically.
+
+## CI/CD
+
+`.github/workflows/ci.yml`, on every push and pull request to `main`. Same gates
+as `pnpm check`, so nothing passes on a laptop and fails in CI.
+
+**Job `check`** — install with a frozen lockfile, typecheck, lint, tests with
+coverage, the validator self-test, a full production build, the build-output
+assertions, the content assertions, and the build-assertion self-test. Uploads
+`dist/` as an artifact.
+
+**Job `security`** — `pnpm audit --audit-level=high --prod` and the header
+assertions. A dev-only advisory is reported but does not fail the build, since it
+cannot reach a visitor.
+
+The build step is worth having on this repository in particular: it is a
+single-page site whose HTML is generated, so a change can typecheck, lint, pass
+every test, and still produce a document with no content in it.
+
+## Deploying
+
+`vercel.json` pins the framework, build command, output directory, cache rules
+and headers, so a Vercel project needs no further configuration.
+
+```bash
+vercel link
+vercel --prod
+```
+
+**The repository is private**, so there is no Vercel Git integration and deploys
+are manual from a clone. Connecting one requires adding the project to the
+account explicitly or making the repository public.
+
+Before a real launch:
+
+- **A domain.** Set `site.domain` and rebuild. See
+  [changing the domain](#changing-the-domain) for what is already handled.
+- **The social image.** `public/og.png` is a committed artifact;
+  `scripts/og-template.html` is its editable source. Render at 1200×630.
+- **Search Console.** Submit `sitemap.xml`. Needs a human.
+
+## Contributing
+
+1. Branch from `main`.
+2. `pnpm check` must pass. It is the same gate CI runs.
+3. Add or update a test for behaviour you changed.
+4. If you changed the data, the validators and content assertions will tell you
+   what copy is now out of step. Fix the copy rather than the assertion.
+5. Keep component boundaries as they are. One section per file, shared primitives
+   in `components/ui/`, no product facts in a component.
+6. Do not add a dependency to solve something the platform already does. The
+   current bundle is 85 kB gzipped with no animation library, no router, and no
+   UI framework; each of those was a deliberate absence.
+
+## Releasing
+
+The repository is tagged `vX.Y.Z` and releases are published on GitHub.
+
+```bash
+pnpm check
+vercel --prod          # deploy the exact commit you are about to tag
+git tag -a v1.1.0 -m "…"
+git push origin main --tags
+gh release create v1.1.0 --title "v1.1.0" --notes-file notes.md
+```
+
+Order matters: deploy first, verify, then tag. A tag should point at a commit
+whose output is live.
+
+Versions follow semver. A copy change, a dependency bump, or a bug fix is a
+patch. A new section, a new generated file, or a new command is a minor.
 
 ## Reference
 
-`docs/ASSESSMENT.md` records the inspection of `../OmniHilbras` that this design
-system was derived from, including what was reused, what was adapted, and what is
-specific to Hilbras.
+- `docs/ASSESSMENT.md` — the inspection of `../OmniHilbras` this design system was
+  derived from: what was reused, what was adapted, what is specific to Hilbras.
+- `docs/VERIFICATION.md` — the measured claims in this file, with the commands
+  that produce them and what could not be checked.
+- `../OmniHilbras` — the design reference. **Not modified by this project, and not
+  to be.**

@@ -16,7 +16,7 @@ export function Products() {
         id="products-heading"
         eyebrow="Featured products"
         title="What exists today, and what is still being built."
-        lede="Four products lead the ecosystem today. The rest are earlier — and most of them already have a public repository, so you can follow the shape of the company as it grows."
+        lede="Four products lead the ecosystem today. The rest are earlier, and four of those seven already have a public repository — so you can follow the shape of the company as it grows."
       />
 
       {featured.length > 0 ? (

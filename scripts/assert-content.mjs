@@ -12,19 +12,40 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const areas = await readFile(join(root, 'src/data/areas.ts'), 'utf8');
+const areasFile = await readFile(join(root, 'src/data/areas.ts'), 'utf8');
 const site = await readFile(join(root, 'src/data/site.ts'), 'utf8');
 
-const areasFile = await readFile(join(root, 'src/data/areas.ts'), 'utf8');
-
-// The two arrays have to be counted separately: both open with the same shape.
+// The areas and the products are both arrays of objects with an id, so the block
+// between the two declarations is what separates them.
 const areasBlock = areasFile.slice(areasFile.indexOf('export const areas'), areasFile.indexOf('export const products'));
 const productsBlock = areasFile.slice(areasFile.indexOf('export const products'));
+
 const areaCount = (areasBlock.match(/^    id: '/gm) ?? []).length;
-const productCount = (productsBlock.match(/^    id: '/gm) ?? []).length;
-const featuredCount = (productsBlock.match(/featured: true/g) ?? []).length;
 const principleCount = (site.match(/^    number: '\d\d',$/gm) ?? []).length;
 const audienceCount = (site.match(/^    id: '(developers|businesses|creators)',$/gm) ?? []).length;
+
+// Split the product records on their boundaries. Searching forward from an id
+// would attribute a later record's fields — including its `featured` flag — to
+// whichever record happened to precede it, which is how an earlier version of
+// this script counted OmniHilbras as featured when it is not.
+const records = productsBlock
+  .split(/\n  \{\n/)
+  .slice(1)
+  .map((record) => ({
+    id: record.match(/id: '([^']+)'/)?.[1] ?? '',
+    featured: record.includes('featured: true'),
+    public: record.includes('repository:') || record.includes('href:'),
+  }))
+  .filter((record) => record.id);
+
+const productCount = records.length;
+const featuredCount = records.filter((record) => record.featured).length;
+
+// The lede also claims how many of the non-featured products are already public.
+// It used to say "most of them", which was 4 of 7 — a bare majority that does
+// not deserve the word. The copy now states the count and this asserts it.
+const others = records.filter((record) => !record.featured);
+const publicNonFeatured = others.filter((record) => record.public).length;
 
 const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 const spelled = (n) => words[n] ?? String(n);
@@ -35,6 +56,12 @@ const Sentence = (n) => {
 };
 
 const expectations = [
+  {
+    file: 'src/components/Products.tsx',
+    pattern: /(\w+) of those (\w+) already have a public repository/,
+    expected: [spelled(publicNonFeatured), spelled(others.length)],
+    what: 'the products lede count of public projects',
+  },
   { file: 'src/components/Ecosystem.tsx', pattern: /title="(\w+) areas\. One company\."/, expected: Sentence(areaCount), what: 'the ecosystem heading' },
   { file: 'src/components/Philosophy.tsx', pattern: /title="(\w+) commitments we can be held to\."/, expected: Sentence(principleCount), what: 'the philosophy heading' },
   { file: 'src/components/Audiences.tsx', pattern: /title="(\w+) audiences, three different entry points\."/, expected: Sentence(audienceCount), what: 'the audiences heading' },
@@ -67,5 +94,6 @@ if (problems.length) {
 
 console.log(
   `content: counts consistent — ${areaCount} areas, ${productCount} products, ` +
-    `${featuredCount} featured, ${principleCount} principles, ${audienceCount} audiences`,
+    `${featuredCount} featured, ${publicNonFeatured} of ${others.length} others public, ` +
+    `${principleCount} principles, ${audienceCount} audiences`,
 );

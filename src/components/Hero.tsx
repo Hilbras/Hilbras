@@ -24,9 +24,14 @@ export function Hero() {
             Build. Connect. <span className="gold-text">Create.</span>
           </h1>
 
+          {/* Names all six areas, because the taxonomy has six and a reader who
+              counts four of them here and finds six below has been told something
+              different by two sections of the same page. "For the next
+              generation of the web" was the previous ending; it claimed a
+              direction rather than describing what is being built. */}
           <p className="muted hero-in hero-in-3 mx-auto mt-6 max-w-2xl text-base leading-relaxed sm:text-lg">
-            Hilbras builds modern software infrastructure, developer tools, AI systems, and digital platforms
-            for the next generation of the web.
+            Building across AI infrastructure, developer infrastructure, platforms, social technology,
+            computing, and security.
           </p>
 
           <div className="hero-in hero-in-4 mt-8 flex flex-wrap items-center justify-center gap-3">
