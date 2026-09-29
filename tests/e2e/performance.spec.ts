@@ -157,28 +157,42 @@ test.describe('runtime cost', () => {
   });
 
   test('shows content in the initial viewport without scrolling', async ({ page }) => {
-    // Same reasoning for the scroll reveals: whatever is on screen when the page
-    // loads must be legible, not waiting on an observer's scheduling.
+    // Same reasoning for the scroll reveals: content a reader is looking at must
+    // become legible, not wait on an observer's scheduling and then on a
+    // transition.
+    //
+    // Polled rather than sampled at a fixed moment, because "hidden" and "mid
+    // fade" look identical at any single instant. An element that entered the
+    // viewport after mount is revealed as soon as the observer re-evaluates and
+    // then takes `--reveal-item-duration` to reach full opacity; a staggered
+    // child may not start for another 700ms. What matters is that nothing
+    // centred on screen is *permanently* hidden, and only a poll can tell those
+    // two apart.
     for (const route of ['/', '/products', '/products/sdk', '/products/os']) {
       await page.goto(route, { waitUntil: 'load' });
-      await page.waitForTimeout(400);
 
       // "Substantially in view", meaning the element's centre is on screen. The
       // reveal threshold is 16% visible, so anything whose middle is showing has
       // long passed it — and a card whose top edge has only just entered is
       // correctly still hidden, because revealing it is what the scroll is for.
-      const hiddenInView = await page.evaluate(() =>
-        [...document.querySelectorAll('.reveal')]
-          .filter((element) => {
-            const box = element.getBoundingClientRect();
-            const centre = box.top + box.height / 2;
-            const inView = centre > 0 && centre < window.innerHeight;
-            return inView && Number(getComputedStyle(element).opacity) < 0.99;
-          })
-          .map((element) => (element.textContent ?? '').trim().slice(0, 40)),
-      );
+      const centredAndHidden = () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('.reveal')]
+            .filter((element) => {
+              const box = element.getBoundingClientRect();
+              const centre = box.top + box.height / 2;
+              const inView = centre > 0 && centre < window.innerHeight;
+              return inView && Number(getComputedStyle(element).opacity) < 0.99;
+            })
+            .map((element) => (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40)),
+        );
 
-      expect(hiddenInView, `content in view but hidden on ${route}`).toEqual([]);
+      await expect
+        .poll(centredAndHidden, {
+          message: `content centred on screen but never revealed on ${route}`,
+          timeout: 5_000,
+        })
+        .toEqual([]);
     }
   });
 

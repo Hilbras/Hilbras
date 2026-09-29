@@ -113,6 +113,8 @@ test.describe('the product index', () => {
 
   test('states how many products there are, and the number matches', async ({ page }) => {
     await page.goto('/products', { waitUntil: 'load' });
+    // Polled rather than read once: the lede is a scroll reveal with a 580ms
+    // transition, so a fixed short wait can catch it mid-fade.
     await expect(page.getByText(/11 products across 6 technology areas/)).toBeVisible();
   });
 
