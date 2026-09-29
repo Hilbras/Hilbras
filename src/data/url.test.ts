@@ -33,10 +33,80 @@ describe('resolving the site origin', () => {
     warn.mockRestore();
   });
 
+  describe('Vercel\'s own variables', () => {
+    // A preview that publishes the production canonical is a real defect: a
+    // crawler that indexes the preview records production URLs as the address of
+    // preview content, and a canonical is a claim about which URL is the real one.
+    const PRODUCTION = 'https://hilbras.vercel.app';
+    const PREVIEW = 'hilbras-abc123-hassan0deghedy-1560s-projects.vercel.app';
+
+    it('gives a preview deployment its own origin', () => {
+      expect(
+        resolveSiteUrl({
+          VERCEL_ENV: 'preview',
+          VERCEL_URL: PREVIEW,
+          VERCEL_PROJECT_PRODUCTION_URL: PRODUCTION,
+        }),
+      ).toBe(`https://${PREVIEW}`);
+    });
+
+    it('gives production the production alias, not the per-deployment host', () => {
+      // VERCEL_URL is unique per deployment, so using it for production would
+      // give every release its own identity and break canonicals across deploys.
+      expect(
+        resolveSiteUrl({
+          VERCEL_ENV: 'production',
+          VERCEL_URL: PREVIEW,
+          VERCEL_PROJECT_PRODUCTION_URL: PRODUCTION,
+        }),
+      ).toBe(PRODUCTION);
+    });
+
+    it('uses the deployment host when there is no production alias', () => {
+      expect(
+        resolveSiteUrl({ VERCEL_ENV: 'production', VERCEL_URL: PREVIEW }),
+      ).toBe(`https://${PREVIEW}`);
+    });
+
+    it('treats development like preview, and a bare host as https', () => {
+      expect(
+        resolveSiteUrl({ VERCEL_ENV: 'development', VERCEL_URL: 'localhost:3000' }),
+      ).toBe('https://localhost:3000');
+    });
+
+    it('falls back to the committed domain off Vercel', () => {
+      expect(resolveSiteUrl({ VERCEL_ENV: undefined, VERCEL_URL: PREVIEW })).toBe(site.domain);
+      expect(resolveSiteUrl({})).toBe(site.domain);
+    });
+
+    it('lets an explicit SITE_URL win over Vercel', () => {
+      expect(
+        resolveSiteUrl({
+          SITE_URL: 'https://override.example',
+          VERCEL_ENV: 'preview',
+          VERCEL_URL: PREVIEW,
+        }),
+      ).toBe('https://override.example');
+    });
+
+    it('is not fooled by a preview that claims to be production', () => {
+      // The whole point: a preview must not inherit the production identity.
+      const preview = resolveSiteUrl({
+        VERCEL_ENV: 'preview',
+        VERCEL_URL: PREVIEW,
+        VERCEL_PROJECT_PRODUCTION_URL: PRODUCTION,
+      });
+      expect(preview).not.toBe(PRODUCTION);
+      expect(preview).toContain(PREVIEW);
+    });
+  });
+
   it('reports whether the build is using the committed domain', () => {
     expect(isDefaultOrigin({})).toBe(true);
     expect(isDefaultOrigin({ SITE_URL: site.domain })).toBe(true);
     expect(isDefaultOrigin({ SITE_URL: 'https://preview.vercel.app' })).toBe(false);
+    // A preview on Vercel is not the committed domain either.
+    expect(isDefaultOrigin({ VERCEL_ENV: 'preview', VERCEL_URL: 'x.vercel.app' })).toBe(false);
   });
 });
 

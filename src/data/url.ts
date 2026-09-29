@@ -45,27 +45,58 @@ function readEnv(): Record<string, string | undefined> {
 /**
  * The effective origin.
  *
- * Falls back to the committed domain when `SITE_URL` is absent or unusable, and
- * warns rather than throwing: a typo in an environment variable should not take
- * down a build that would otherwise be correct, but it must not be silent
- * either.
+ * Resolution order, first match wins:
+ *
+ * 1. `SITE_URL` — an explicit override, always.
+ * 2. Vercel's own variables, which is what makes a preview deployment identify
+ *    as itself. A preview that publishes the production canonical is a real
+ *    defect, not a cosmetic one: a crawler that indexes the preview records
+ *    production URLs as the address of preview content, and a canonical is a
+ *    claim about which URL is the real one.
+ *    - `production` uses the production alias, not `VERCEL_URL`, which is the
+ *      per-deployment host and would give every release its own identity.
+ *    - `preview` uses this deployment's own host, so its canonical, Open Graph,
+ *      sitemap and JSON-LD all name the preview.
+ * 3. `site.domain` — the committed default, for a local build.
+ *
+ * Falls back with a warning rather than throwing when `SITE_URL` is unusable: a
+ * typo in an environment variable should not take down a build that would
+ * otherwise be correct, but it must not be silent either.
  */
 export function resolveSiteUrl(env: Record<string, string | undefined> = readEnv()): string {
   const override = env.SITE_URL;
 
-  if (override === undefined || override.trim() === '') {
-    return normalise(site.domain);
+  if (override !== undefined && override.trim() !== '') {
+    if (!isUsableOrigin(override)) {
+      console.warn(
+        `site: ignoring SITE_URL="${override}" — it is not an absolute http(s) origin. ` +
+          `Falling back to ${fromVercel(env) ?? site.domain}.`,
+      );
+    } else {
+      return normalise(override);
+    }
   }
 
-  if (!isUsableOrigin(override)) {
-    console.warn(
-      `site: ignoring SITE_URL="${override}" — it is not an absolute http(s) origin. ` +
-        `Falling back to ${site.domain}.`,
-    );
-    return normalise(site.domain);
-  }
+  return normalise(fromVercel(env) ?? site.domain);
+}
 
-  return normalise(override);
+/** The origin Vercel implies, or null when the build is not on Vercel. */
+function fromVercel(env: Record<string, string | undefined>): string | null {
+  // A bare host is a hostname, not an origin.
+  const asOrigin = (value: string | undefined) => {
+    if (!value?.trim()) return null;
+    const candidate = /^https?:\/\//i.test(value) ? value : `https://${value.trim()}`;
+    return isUsableOrigin(candidate) ? normalise(candidate) : null;
+  };
+
+  if (env.VERCEL_ENV === 'production') {
+    return asOrigin(env.VERCEL_PROJECT_PRODUCTION_URL) ?? asOrigin(env.VERCEL_URL);
+  }
+  // `preview` and `development` both want the host they are served from.
+  if (env.VERCEL_ENV === 'preview' || env.VERCEL_ENV === 'development') {
+    return asOrigin(env.VERCEL_URL);
+  }
+  return null;
 }
 
 /** Whether the build is using the committed domain rather than an override. */
