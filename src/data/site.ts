@@ -45,7 +45,7 @@ export const heroAssurances = [
   'Independent products',
   'Bring your own infrastructure',
   'Open where it matters',
-] as const;
+];
 
 export const audiences = [
   {
@@ -84,7 +84,7 @@ export const audiences = [
     ],
     cta: { href: '#ecosystem', label: 'Explore the ecosystem' },
   },
-] as const;
+];
 
 export const principles = [
   {
@@ -117,7 +117,7 @@ export const principles = [
     title: 'Open where it matters',
     body: 'Where a Hilbras project can be transparent, interoperable, and community-welcoming, it is — starting with the parts developers have to depend on.',
   },
-] as const;
+];
 
 export const vision = {
   lede: 'Hilbras is not one application. The long-term work is a technology ecosystem, built in the order the layers actually depend on each other.',
@@ -131,7 +131,7 @@ export const vision = {
     { id: 'collaboration', label: 'Collaboration', body: 'Shared work, review, and community.' },
     { id: 'computing', label: 'Computing', body: 'The environment all of it runs in.' },
   ],
-} as const;
+};
 
 export const visionCaveat =
   'This is a direction, not a delivery date. Some of these layers are usable today; others are early. We would rather show the structure than predict the timeline.';

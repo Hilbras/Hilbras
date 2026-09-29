@@ -56,6 +56,9 @@ if (!html.includes('application/ld+json')) {
 }
 
 await writeFile(distIndex, html, 'utf8');
+
+// The compiled SSR bundle has done its job: validation, the SEO files, and this
+// step have all read from it.
 await rm(join(root, '.ssr'), { recursive: true, force: true });
 
 console.log(

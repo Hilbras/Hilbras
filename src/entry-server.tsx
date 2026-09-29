@@ -1,5 +1,6 @@
 import { renderToString } from 'react-dom/server';
 import { buildStructuredDataDocument } from './data/structuredData';
+import { validateData, formatIssues } from './data/validation';
 import { site } from './data/site';
 import { HomePage } from './pages/HomePage';
 
@@ -18,4 +19,4 @@ export function render(): string {
   return renderToString(<HomePage />);
 }
 
-export { site, buildStructuredDataDocument };
+export { site, buildStructuredDataDocument, validateData, formatIssues };
