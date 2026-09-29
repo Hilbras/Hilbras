@@ -72,7 +72,7 @@ function ProductLinks({ product }: ProductCardProps) {
         </a>
       ) : null}
       {isPublic ? null : (
-        <span className="muted font-mono text-[11px]">No public release yet</span>
+        <span className="muted font-mono text-11">No public release yet</span>
       )}
     </>
   );
@@ -92,7 +92,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
 
       <ProductName
         product={product}
-        className="relative text-2xl font-semibold tracking-[-0.03em] after:absolute"
+        className="relative text-2xl font-semibold tracking-feature after:absolute"
       />
       {area ? <p className="mono-label relative mt-2">{area.name}</p> : null}
       <p className="muted relative mt-4 mb-7 max-w-lg text-sm leading-relaxed sm:text-base">
@@ -102,7 +102,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
       <div className="relative mt-auto flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <a
           href={productHref(product)}
-          className="btn-ghost !text-[13px] transition-colors group-hover:border-gold/40"
+          className="btn-ghost !text-13 transition-colors group-hover:border-gold/40"
         >
           Details
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -110,7 +110,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
         {product.repository ? (
           <a
             href={product.repository}
-            className="btn-quiet !text-[13px]"
+            className="btn-quiet !text-13"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -122,7 +122,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
         {product.href ? (
           <a
             href={product.href}
-            className="btn-quiet text-gold-text !text-[13px]"
+            className="btn-quiet text-gold-text !text-13"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -149,13 +149,13 @@ export function ProductCard({ product }: ProductCardProps) {
         <StatusPill status={product.status} />
       </div>
 
-      <ProductName product={product} className="relative text-lg font-semibold tracking-[-0.02em]" />
+      <ProductName product={product} className="relative text-lg font-semibold tracking-card" />
       {area ? <p className="mono-label mt-1.5">{area.name}</p> : null}
       <p className="muted mt-3 mb-6 text-sm leading-relaxed">{product.description}</p>
 
       {/* The description owns the minimum gap; `mt-auto` absorbs the rest, so the
           rule and the links sit on the same baseline in every card. */}
-      <div className="mt-auto flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 text-[12px]">
+      <div className="mt-auto flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 text-xs">
         <ProductLinks product={product} />
       </div>
 

@@ -28,7 +28,7 @@ type StatusPillProps = {
 export function StatusPill({ status, compact }: StatusPillProps) {
   if (compact) {
     return (
-      <span className="ml-auto shrink-0 font-mono text-[9px] tracking-[0.08em] text-muted uppercase">
+      <span className="ml-auto shrink-0 font-mono text-9 tracking-label text-muted uppercase">
         {statusLabels[status]}
       </span>
     );
@@ -41,7 +41,7 @@ export function StatusPill({ status, compact }: StatusPillProps) {
       // guess whether `Alpha` is production-ready. The definition is on the
       // element for pointer and assistive-technology users alike.
       title={statusDefinitions[status]}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.08em] uppercase ${statusClass[status]}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-2xs tracking-label uppercase ${statusClass[status]}`}
     >
       {status === 'stable' ? (
         <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />

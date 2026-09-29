@@ -85,13 +85,13 @@ export function ProductsMenu({ disclosure, hover, buttonRef }: ProductsMenuProps
                       <li key={`${area.id}-${product.id}`}>
                         <ProductLink
                           product={product}
-                          className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[13px] text-muted transition-colors hover:bg-gold-soft hover:text-gold-text"
+                          className="flex items-center gap-2 rounded-md px-1.5 py-1 text-13 text-muted transition-colors hover:bg-gold-soft hover:text-gold-text"
                           onClick={disclosure.close}
                         >
                           <Mark id={product.mark} className="h-3.5 w-3.5 shrink-0 text-gold" />
                           <span className="min-w-0">
                             <span className="block truncate">{product.name}</span>
-                            <span className="muted block truncate text-[11px]">{product.summary}</span>
+                            <span className="muted block truncate text-11">{product.summary}</span>
                           </span>
                           <StatusPill status={product.status} compact />
                         </ProductLink>
@@ -104,7 +104,7 @@ export function ProductsMenu({ disclosure, hover, buttonRef }: ProductsMenuProps
             <div className="mt-1 border-t border-line px-2 pt-2 pb-1">
               <a
                 href="/products"
-                className="btn-quiet !px-1.5 !py-1.5 text-[13px] text-gold-text"
+                className="btn-quiet !px-1.5 !py-1.5 text-13 text-gold-text"
                 onClick={disclosure.close}
               >
                 All products

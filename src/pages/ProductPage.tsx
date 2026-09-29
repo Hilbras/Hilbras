@@ -226,7 +226,7 @@ function ProductFacts({ product, areas: productAreas }: { product: Product; area
               {facts.map((fact) => (
                 <div key={fact.label} className="border-t border-line pt-4">
                   <dt className="mono-label">{fact.label}</dt>
-                  <dd className="mt-1.5 text-[15px] font-medium">{fact.value}</dd>
+                  <dd className="mt-1.5 text-15 font-medium">{fact.value}</dd>
                 </div>
               ))}
             </dl>
@@ -263,8 +263,8 @@ function RelatedProducts({ product, related }: { product: Product; related: Prod
                   >
                     <Mark id={item.mark} className="h-6 w-6 shrink-0 text-gold" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium">{item.name}</span>
-                      <span className="muted block truncate text-[12px]">{item.summary}</span>
+                      <span className="block truncate text-15 font-medium">{item.name}</span>
+                      <span className="muted block truncate text-xs">{item.summary}</span>
                     </span>
                     <StatusPill status={item.status} compact />
                   </a>

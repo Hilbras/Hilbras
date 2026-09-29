@@ -34,7 +34,7 @@ export function About() {
               </span>
               <span className="mono-label transition-colors group-hover:text-gold-text">Principle</span>
             </div>
-            <h3 className="text-lg font-semibold tracking-[-0.02em]">{title}</h3>
+            <h3 className="text-lg font-semibold tracking-card">{title}</h3>
             <p className="muted mt-3 text-sm leading-relaxed">{body}</p>
             <div className="card-glow" aria-hidden="true" />
           </Reveal>

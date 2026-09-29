@@ -80,14 +80,14 @@ export function MobileNavigation({ disclosure }: MobileNavigationProps) {
         <p className="mono-label mt-3 px-2">Products</p>
         {areas.map((area) => (
           <div key={area.id} className="mt-2 px-2">
-            <p className="text-[13px] font-semibold">{area.name}</p>
+            <p className="text-13 font-semibold">{area.name}</p>
             <ul className="mt-1 space-y-0.5">
               {productsInArea(area.id).map((product) => (
                 <li key={`${area.id}-${product.id}`}>
                   <ProductLink
                     product={product}
                     onClick={disclosure.close}
-                    className="flex items-center gap-2 rounded-md py-1.5 text-[13px] text-muted"
+                    className="flex items-center gap-2 rounded-md py-1.5 text-13 text-muted"
                   >
                     <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />
                     {product.name}

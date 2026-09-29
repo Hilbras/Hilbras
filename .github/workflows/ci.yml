@@ -68,6 +68,13 @@ jobs:
         # document to every crawler that does not run JavaScript.
         run: pnpm assert:build
 
+      - name: Design system
+        # No colour literals in components, and no type size or letter-spacing
+        # written as an arbitrary value. Both are ways of bypassing the token
+        # layer, and both are silent: the component renders, just not from the
+        # system, so a theme or a scale change misses it.
+        run: pnpm assert:design
+
       - name: Build-assertion self-test
         # Corrupts the built document six ways and asserts the assertion above
         # rejects each, then restores it. A guard never seen to fire is not a

@@ -57,9 +57,9 @@ function StageNodes({ stage }: { stage: Stage }) {
             <ProductLink product={product} className="node flex h-full flex-col gap-1.5 px-3 py-3">
               <span className="flex items-center gap-2">
                 <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />
-                <span className="truncate text-[13px] font-medium">{product.name}</span>
+                <span className="truncate text-13 font-medium">{product.name}</span>
               </span>
-              <span className="muted truncate text-[10px]">{area ? area.short : 'Hilbras'}</span>
+              <span className="muted truncate text-2xs">{area ? area.short : 'Hilbras'}</span>
             </ProductLink>
           </li>
         );

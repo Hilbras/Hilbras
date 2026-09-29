@@ -60,13 +60,13 @@ export function Hero() {
                   <HilbrasMark className="h-3.5 w-3.5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-[11px] font-medium tracking-wide">hilbras / ecosystem</p>
-                  <p className="muted mt-0.5 text-[10px]">
+                  <p className="truncate font-mono text-11 font-medium tracking-wide">hilbras / ecosystem</p>
+                  <p className="muted mt-0.5 text-2xs">
                     {spell(counts.areas)} technology areas · {spell(counts.products)} products
                   </p>
                 </div>
               </div>
-              <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold/30 bg-gold-soft px-2.5 py-1 font-mono text-[10px] text-gold-text">
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold/30 bg-gold-soft px-2.5 py-1 font-mono text-2xs text-gold-text">
                 <span className="soft-pulse h-1.5 w-1.5 rounded-full bg-gold" aria-hidden="true" />
                 in progress
               </span>
@@ -78,16 +78,16 @@ export function Hero() {
               {areas.map((area) => (
                 <li key={area.id} className="flex items-center gap-2.5 bg-surface px-4 py-4 sm:px-5">
                   <Mark id={area.mark} className="h-4 w-4 shrink-0 text-gold" />
-                  <span className="text-[13px] leading-tight font-medium">{area.short}</span>
+                  <span className="text-13 leading-tight font-medium">{area.short}</span>
                 </li>
               ))}
             </ul>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-4 py-3 sm:px-5">
-              <p className="muted text-[11px]">
+              <p className="muted text-11">
                 Every product stands on its own. The connections are an option, not a requirement.
               </p>
-              <a href="/connect" className="btn-quiet !px-2 !py-1 text-[11px] text-gold-text">
+              <a href="/connect" className="btn-quiet !px-2 !py-1 text-11 text-gold-text">
                 See how it connects
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </a>

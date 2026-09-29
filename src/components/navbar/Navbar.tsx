@@ -53,7 +53,7 @@ export function Navbar() {
 
         <a
           href="#main"
-          className="flex shrink-0 items-center gap-2.5 rounded-lg text-[15px] font-semibold tracking-tight"
+          className="flex shrink-0 items-center gap-2.5 rounded-lg text-15 font-semibold tracking-tight"
         >
           <HilbrasMark className="h-[18px] w-[18px] text-gold" />
           <span>{site.name}</span>

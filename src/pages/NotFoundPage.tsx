@@ -46,7 +46,7 @@ export function NotFoundPage({ path }: { path: string }) {
                 <li key={product.id}>
                   <a
                     href={productPath(product.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-[13px] text-muted transition-colors hover:border-gold/40 hover:text-gold-text"
+                    className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text"
                   >
                     {product.name}
                   </a>

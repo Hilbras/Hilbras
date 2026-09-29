@@ -85,19 +85,19 @@ export function ProductIndexPage() {
                           <Mark id={product.mark} className="mt-0.5 h-6 w-6 shrink-0 text-gold" />
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-[15px] font-medium">{product.name}</span>
+                              <span className="text-15 font-medium">{product.name}</span>
                               <StatusPill status={product.status} compact />
                             </span>
-                            <span className="muted mt-1 block text-[13px] leading-relaxed">
+                            <span className="muted mt-1 block text-13 leading-relaxed">
                               {product.summary}
                             </span>
                             {alsoIn.length > 0 ? (
-                              <span className="mt-2 block text-[12px] text-muted opacity-80">
+                              <span className="mt-2 block text-xs text-muted opacity-80">
                                 Also in {alsoIn.join(', ')}
                               </span>
                             ) : null}
                             {!product.repository && !product.href ? (
-                              <span className="mt-2 block text-[12px] text-muted opacity-80">
+                              <span className="mt-2 block text-xs text-muted opacity-80">
                                 No public release yet
                               </span>
                             ) : null}

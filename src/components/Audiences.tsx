@@ -17,13 +17,13 @@ export function Audiences() {
         {audiences.map((audience) => (
           <Reveal key={audience.id} as="li" variant="card" className="h-full">
             <article className="card group relative flex h-full flex-col overflow-hidden p-6 sm:p-7">
-              <h3 className="text-lg font-semibold tracking-[-0.02em]">{audience.title}</h3>
+              <h3 className="text-lg font-semibold tracking-card">{audience.title}</h3>
               <p className="mt-3 text-sm leading-relaxed font-medium">{audience.lede}</p>
               <p className="muted mt-3 text-sm leading-relaxed">{audience.body}</p>
 
               <ul className="mt-6 flex-1 space-y-2.5 border-t border-line pt-4">
                 {audience.points.map((point) => (
-                  <li key={point} className="muted flex items-start gap-2.5 text-[12px] leading-relaxed">
+                  <li key={point} className="muted flex items-start gap-2.5 text-xs leading-relaxed">
                     <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" aria-hidden="true" />
                     {point}
                   </li>

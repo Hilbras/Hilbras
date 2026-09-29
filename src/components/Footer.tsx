@@ -11,12 +11,12 @@ export function Footer() {
     <footer className="relative border-t border-line">
       <div className="shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.1fr_1.5fr_0.8fr_0.8fr]">
         <div>
-          <a href="#main" className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
+          <a href="#main" className="flex items-center gap-2.5 text-15 font-semibold tracking-tight">
             <HilbrasMark className="h-[18px] w-[18px] text-gold" />
             <span>{site.name}</span>
           </a>
-          <p className="muted mt-3 max-w-[26ch] text-[13px] leading-relaxed">{site.tagline}</p>
-          <a href="/#start" className="btn-gold mt-5 !px-3.5 !py-2 !text-[13px]">
+          <p className="muted mt-3 max-w-[26ch] text-13 leading-relaxed">{site.tagline}</p>
+          <a href="/#start" className="btn-gold mt-5 !px-3.5 !py-2 !text-13">
             Get started
           </a>
         </div>
@@ -25,7 +25,7 @@ export function Footer() {
           <h2 id="footer-products" className="mono-label">
             Products
           </h2>
-          <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
+          <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-13">
             {products.map((product) => {
               const area = areaById.get(product.area);
               return (
@@ -33,7 +33,7 @@ export function Footer() {
                   <ProductLink product={product} className="footer-link block truncate">
                     {product.name}
                   </ProductLink>
-                  {area ? <span className="muted block truncate text-[11px]">{area.short}</span> : null}
+                  {area ? <span className="muted block truncate text-11">{area.short}</span> : null}
                 </li>
               );
             })}

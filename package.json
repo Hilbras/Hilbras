@@ -20,7 +20,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers && pnpm smoke:local",
+    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers && pnpm assert:design && pnpm smoke:local",
     "assert:build": "node scripts/assert-build-output.mjs",
     "assert:headers": "node scripts/assert-security-headers.mjs",
     "verify:build-assertion": "node scripts/verify-build-assertion.mjs",
@@ -32,7 +32,8 @@
     "smoke": "node scripts/smoke.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "check:all": "pnpm check && pnpm test:e2e",
-    "smoke:local": "node scripts/smoke-local.mjs"
+    "smoke:local": "node scripts/smoke-local.mjs",
+    "assert:design": "node scripts/assert-design-system.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",

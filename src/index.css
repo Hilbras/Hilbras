@@ -136,6 +136,34 @@
   --color-danger: var(--danger);
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---------------------------------------------------------------
+   * The type scale.
+   *
+   * Tailwind's own steps are 10, 12, 14, 16, 18, 20, 24px and up. This
+   * design needs four more: 9 for the compact status label, 11 and 13 for
+   * captions and metadata, and 15 for card titles. Those were `text-[13px]`
+   * and friends written by hand in fifty places across the components, which
+   * means changing one meant finding every use, and nothing stopped a new
+   * arbitrary value being added.
+   *
+   * They are named for their pixel size rather than given semantic names,
+   * because semantic names invite "this should really be `text-sm`" and the
+   * answer is no: 13px is a deliberate step, not a small text-sm. `text-2xs`
+   * is Tailwind's own 10px and is used as-is.
+   * --------------------------------------------------------------- */
+  --text-9: 0.5625rem;   /*  9px  the compact status label          */
+  --text-11: 0.6875rem;  /* 11px  captions, metadata, timestamps   */
+  --text-13: 0.8125rem;  /* 13px  card titles, dense navigation    */
+  --text-15: 0.9375rem;  /* 15px  body emphasis, product names     */
+
+  /* Letter-spacing steps. Also hand-rolled as `tracking-[-0.02em]`. The
+     display and section sizes set theirs in `.display-title` and
+     `.section-title`; these cover the sizes that do not have a class. */
+  --tracking-card: -0.02em;     /* card and list titles  */
+  --tracking-feature: -0.03em;  /* the featured card     */
+  --tracking-label: 0.08em;     /* the status pill      */
+  --tracking-claim: 0.12em;     /* the assurance rows   */
 }
 
 @layer base {

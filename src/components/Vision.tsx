@@ -17,7 +17,7 @@ export function Vision() {
             className="group relative flex flex-col bg-surface p-5 transition-colors hover:bg-gold-soft/40"
           >
             <span className="mono-label text-gold-text">{String(index + 1).padStart(2, '0')}</span>
-            <p className="mt-3 text-[15px] font-semibold tracking-[-0.02em]">{stage.label}</p>
+            <p className="mt-3 text-15 font-semibold tracking-card">{stage.label}</p>
             <p className="muted mt-2 text-xs leading-relaxed">{stage.body}</p>
           </Reveal>
         ))}

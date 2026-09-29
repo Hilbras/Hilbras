@@ -21,7 +21,7 @@ export function Ecosystem() {
           return (
             <Reveal key={area.id} variant="card" className="card group relative flex flex-col overflow-hidden p-6">
               <div className="mb-7 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold tracking-[-0.02em]">{area.name}</h3>
+                <h3 className="text-lg font-semibold tracking-card">{area.name}</h3>
                 <span className="mono-label shrink-0 transition-colors group-hover:text-gold-text">
                   {owned.length} {owned.length === 1 ? 'product' : 'products'}
                 </span>
@@ -34,7 +34,7 @@ export function Ecosystem() {
                   <li key={`${area.id}-${product.id}`}>
                     <ProductLink
                       product={product}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-2.5 py-1.5 text-[12px] text-muted transition-colors hover:border-gold/50 hover:bg-gold-soft hover:text-gold-text"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-gold/50 hover:bg-gold-soft hover:text-gold-text"
                     >
                       <Mark id={product.mark} className="h-3.5 w-3.5 shrink-0 text-gold" />
                       {product.name}

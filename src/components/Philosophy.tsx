@@ -27,7 +27,7 @@ export function Philosophy() {
             <span className="font-mono text-xl font-bold text-gold/75" aria-hidden="true">
               {principle.number}
             </span>
-            <h3 className="text-base font-semibold tracking-[-0.02em] sm:text-lg">{principle.title}</h3>
+            <h3 className="text-base font-semibold tracking-card sm:text-lg">{principle.title}</h3>
             <p className="muted text-sm leading-relaxed">{principle.body}</p>
           </Reveal>
         ))}

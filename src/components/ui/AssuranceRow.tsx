@@ -7,7 +7,7 @@ type Assurance = {
 };
 
 const base =
-  'muted flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[10px] tracking-[0.12em] uppercase';
+  'muted flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-2xs tracking-claim uppercase';
 
 function AssuranceItem({ icon: Icon, label }: Assurance) {
   return (

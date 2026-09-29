@@ -55,12 +55,12 @@ export function Technology() {
                   <span className="mono-label transition-colors group-hover:text-gold-text">{area.short}</span>
                 </div>
 
-                <h3 className="text-lg font-semibold tracking-[-0.02em]">{area.name}</h3>
+                <h3 className="text-lg font-semibold tracking-card">{area.name}</h3>
                 <p className="muted mt-2.5 mb-6 text-sm leading-relaxed">{area.summary}</p>
 
                 <ul className="mt-auto space-y-2 border-t border-line pt-4">
                   {capabilities.map((capability) => (
-                    <li key={capability} className="muted flex items-start gap-2 text-[12px] leading-relaxed">
+                    <li key={capability} className="muted flex items-start gap-2 text-xs leading-relaxed">
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gold" aria-hidden="true" />
                       {capability}
                     </li>

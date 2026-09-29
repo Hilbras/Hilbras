@@ -353,12 +353,30 @@ that a deliberately corrupted object throws.
 
 Stated plainly rather than implied by omission.
 
-- **Safari and WebKit.** The WebKit binaries downloaded, but WebKit needs
-  `libevent-2.1-7t64`, `libavif16` and `libmanette-0.2-0`, which cannot be
-  installed without root on this machine. The project is configured and commented
-  in `playwright.config.ts`; uncommenting it on a host that has the libraries is
-  all that is needed. Safari is WebKit, so this is a real gap: the engine most
-  likely to differ is the one untested.
+- **Safari and WebKit.** Attempted and diagnosed rather than assumed. The
+  binaries download, and the three libraries Playwright names
+  (`libevent-2.1-7t64`, `libavif16`, `libmanette-0.2-0`) can be extracted from
+  their `.deb`s without root and reached through `LD_LIBRARY_PATH` — so the
+  "needs root" answer is not the whole story.
+
+  It still does not run, for a reason worth recording precisely: the system
+  `libsoup-3` and GStreamer are older than this WebKit build, and the process
+  dies on
+
+  ```text
+  MiniBrowser: undefined symbol: soup_uri_new (fatal)
+  MiniBrowser: undefined symbol: gst_init_static_plugins (fatal)
+  ```
+
+  Neither the system library nor the newest package Ubuntu 24.04 offers
+  (`libsoup-3.0-0` 3.0.7.4) exports `soup_uri_new`. Satisfying WebKit therefore
+  means building libsoup and the GStreamer stack from source into a private
+  sysroot — a cascade, not a bounded change, and not something to leave behind as
+  an undocumented local hack that only works on one machine.
+
+  The project is configured and commented in `playwright.config.ts`; on a host
+  with a compatible libsoup and GStreamer, uncommenting it is all that is needed.
+  This is a real gap: the engine most likely to differ is the one untested.
 - **Edge as a product.** It shares Chromium's engine, so the Chromium project
   covers its rendering behaviour, but its own shell — extension interop, its own
   settings UI — is unverified.
