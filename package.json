@@ -20,7 +20,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build"
+    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers",
+    "assert:build": "node scripts/assert-build-output.mjs",
+    "assert:headers": "node scripts/assert-security-headers.mjs",
+    "verify:build-assertion": "node scripts/verify-build-assertion.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",

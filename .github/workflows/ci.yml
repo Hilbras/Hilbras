@@ -1,0 +1,114 @@
+name: CI
+
+# One workflow, the same gates a change has to pass locally before it is worth
+# reviewing: types, lint, tests with coverage, the data validator's self-test, and
+# a full production build including the prerender.
+#
+# The build is the interesting one. It is a single-page site whose HTML is
+# generated, so a change can typecheck, lint, pass every test, and still produce
+# a document with no content in it. The build step is what catches that, and
+# these are its assertions.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push supersedes an in-flight run for the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.5.1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit and component tests
+        run: pnpm test:coverage
+
+      - name: Data validation self-test
+        # Breaks the product data nine different ways and asserts the build
+        # rejects each one, then restores it. A validator that has never been
+        # seen to fail is not known to work.
+        run: pnpm verify:validator
+
+      - name: Build
+        run: pnpm build
+
+      - name: Assert the build produced a crawlable document
+        # The failure this guards is silent: every other step can pass while the
+        # prerender produces an empty root, and the site would serve a blank
+        # document to every crawler that does not run JavaScript.
+        run: pnpm assert:build
+
+      - name: Build-assertion self-test
+        # Corrupts the built document six ways and asserts the assertion above
+        # rejects each, then restores it. A guard never seen to fire is not a
+        # guard.
+        run: pnpm verify:build-assertion
+
+      - name: Upload the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  security:
+    name: Security and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.5.1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit dependencies
+        # Fails on a known advisory in the production tree. A dev-only advisory
+        # is reported but does not fail the build, since it cannot reach a
+        # visitor; change this to `audit --audit-level=high` if that is wrong.
+        run: pnpm audit --audit-level=high --prod
+
+      - name: Assert the security headers are still strong
+        # Checks the policy for its properties rather than an exact string, so
+        # tightening it does not break the build and weakening it — adding
+        # 'unsafe-inline', dropping HSTS — does.
+        run: pnpm assert:headers
