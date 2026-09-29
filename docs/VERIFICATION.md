@@ -9,21 +9,33 @@ exact headers from `vercel.json`. Testing the build against the real Content
 Security Policy is the point — a policy that is only ever checked by a deployment
 is a policy that is broken on the day it ships.
 
-**Browser:** Chromium 1243 (Playwright build), headless, on Linux. This is the
-limitation worth reading first: **Firefox, Safari and Edge were not tested.** No
-binaries for them are installed on this machine. See *Not verified* below.
+**Browser:** Chromium and Firefox, via Playwright 1.63, headless, on Linux.
+Firefox was added when its binaries were installed; it runs the same 46 tests and
+finds four real differences, recorded below. **Safari and Edge are still
+untested** — see *Not verified*.
+
+**Machine caveat, read before trusting any timing number here.** The host this was
+built on runs at a load average of 15-29 from work unrelated to the site. Long
+tasks are wall-clock, so they measure the machine as much as the page: the same
+build produced 33 long tasks locally and 24 on production hardware. Every timing
+below was either taken on an idle machine or is explicitly qualified. The
+assertions in `tests/e2e/performance.spec.ts` are bounded to survive this, and
+the comment says so.
 
 ---
 
 ## Reproducing this
 
 ```bash
-pnpm check                 # the whole gate: types, lint, tests, build, assertions
-pnpm serve:headers         # dist/ on :4175 with the real vercel.json headers
+pnpm check          # types, lint, tests, coverage, build, assertions, smoke
+pnpm test:e2e       # 46 browser tests, Chromium and Firefox
+pnpm smoke https://hilbras.vercel.app
 ```
 
-The browser-level checks below were driven with `playwright-core` and a locally
-installed Chromium. The commands are given per section.
+The browser suite is `tests/e2e/`, in the repository, run against the real build
+served with the real `vercel.json` headers. It replaces the ad-hoc harness the
+earlier verification used, which lived outside the repository and was lost when
+`/tmp` was cleared.
 
 ---
 
@@ -33,8 +45,10 @@ installed Chromium. The commands are given per section.
 | --- | --- | --- |
 | Types | `pnpm typecheck` | clean, `strict` + `noUnusedLocals` + `noUnusedParameters` |
 | Lint | `pnpm lint` | clean |
-| Unit + component tests | `pnpm test` | 56 passed, 3 files |
+| Unit + component tests | `pnpm test` | 81 passed, 5 files |
 | Coverage gate | `pnpm test:coverage` | passes thresholds |
+| Browser tests | `pnpm test:e2e` | 46 tests, Chromium and Firefox |
+| Deployment smoke | `pnpm smoke <url>` | passes against production |
 | Data validation | `pnpm validate` | no errors, no warnings |
 | Validator self-test | `pnpm verify:validator` | 9/9 cases caught |
 | Build output | `pnpm assert:build` | 110.9 kB document, 13,286 chars of static text, 20 articles, 1 JSON-LD block |
@@ -221,9 +235,39 @@ the pairwise arithmetic — a 6.3× difference for one function call.
 > localhost and a remote CDN are not the same network. The canvas figures are
 > valid because both sides ran on this machine.
 
+## Browsers
+
+`tests/e2e/` — 46 tests, run in Chromium and Firefox against the prerendered
+build with the production Content Security Policy enforced.
+
+| | Chromium | Firefox |
+| --- | --- | --- |
+| Result | 46 passed | 34 passed, 3 skipped, 0 failed |
+| Suite duration | ~1.9 min | ~11.9 min |
+
+Four real differences, all recorded next to the tests that found them:
+
+1. **`networkidle` never settles in Firefox.** The harness waited for it and
+   timed out. `gotoHome` now waits for the `h1`, which is what the tests need.
+2. **Firefox runs at about a third of Chromium's speed.** A 30 s timeout failed
+   intermittently; it is 60 s now.
+3. **Firefox cannot emulate `prefers-color-scheme` on this host.** Verified
+   directly: `newContext({ colorScheme: 'dark' })` gives `matchMedia` true in
+   Chromium and false in Firefox. Three tests are scoped with the reason in the
+   file.
+4. **The 80 ms hover-intent delay is below Playwright's round trip to Firefox.**
+   "Still closed immediately after hover" passed in one and failed in the other
+   with identical behaviour. Replaced with the requirement it stood for: focus
+   alone must not open the menu.
+
+One bug was found by the suite rather than by it: `ThemeToggle`'s effect wrote
+the theme to `localStorage` on mount, so the system preference was captured on a
+visitor's first load and then frozen permanently. A test asserting the system
+preference noticed the value coming back after `localStorage.clear()`.
+
 ## Tests
 
-56 tests across three files.
+81 unit and component tests across five files, plus 46 browser tests.
 
 - **Data and logic** — unique ids and names, ids safe as URL fragments, every
   product in a real area, every area referencing a real product, repository URLs
@@ -262,11 +306,26 @@ that a deliberately corrupted object throws.
 
 Stated plainly rather than implied by omission.
 
-- **Firefox, Safari and Edge.** No binaries on this machine. Chromium only. The
-  code avoids the usual divergence points — no `backdrop-filter` on anything
-  load-bearing, no `:has()` in a critical path, `translate` rather than `transform`
-  where it matters — but that is reasoning, not evidence. A cross-browser pass
-  needs real browsers.
+- **Safari and WebKit.** The WebKit binaries downloaded, but WebKit needs
+  `libevent-2.1-7t64`, `libavif16` and `libmanette-0.2-0`, which cannot be
+  installed without root on this machine. The project is configured and commented
+  in `playwright.config.ts`; uncommenting it on a host that has the libraries is
+  all that is needed. Safari is WebKit, so this is a real gap: the engine most
+  likely to differ is the one untested.
+- **Edge as a product.** It shares Chromium's engine, so the Chromium project
+  covers its rendering behaviour, but its own shell — extension interop, its own
+  settings UI — is unverified.
+- **`prefers-color-scheme` in Firefox.** Firefox on this host cannot emulate it:
+  the context option is accepted and ignored and `matchMedia` always reports
+  false. Three theme tests are scoped to Chromium with the reason recorded. The
+  system-preference fallback is therefore unobserved in Gecko, not broken.
+- **The first paint in Firefox.** The no-flash test is Chromium-only: Firefox
+  paints before `DOMContentLoaded`, so the first background is not observable
+  through the same hook.
+- **iOS Safari and Android Chrome.** Chromium with a mobile viewport and
+  `isMobile` covers layout, but not Safari's own behaviours: the 100vh problem,
+  the URL bar, momentum scrolling, and Safari's stricter `IntersectionObserver`
+  and `ResizeObserver` delivery.
 - **A real domain.** `hilbras.vercel.app` is what `site.domain` says, so every
   canonical, Open Graph and sitemap URL points there. Moving to a real domain is a
   one-line change plus a rebuild, but nothing has been tested against a domain

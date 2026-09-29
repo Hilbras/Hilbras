@@ -138,7 +138,11 @@ if (html) {
   if (canonical) {
     check(
       canonical.replace(/\/+$/, '') === expectedOrigin,
-      `canonical is ${canonical}, expected ${expectedOrigin}`,
+      `canonical is ${canonical}, expected ${expectedOrigin}. ` +
+        (process.env.SITE_URL
+          ? `The build was checked against a SITE_URL override but the document names a different origin — ` +
+            `was it built without SITE_URL set, or is the deployment serving a different build?`
+          : `The build names an origin other than site.domain — was SITE_URL left set on a previous build?`),
     );
   }
 

@@ -1,18 +1,9 @@
 name: CI
 
-# Action majors are pinned rather than floating, and bumped deliberately: the
-# first version of this workflow used checkout@v5, setup-node@v5,
+# Action majors are pinned rather than floating, and bumped deliberately: an
+# earlier version of this workflow used checkout@v5, setup-node@v5,
 # pnpm/action-setup@v4 and upload-artifact@v4, all of which target Node 20 and
-# now warn on every run.
-
-# One workflow, the same gates a change has to pass locally before it is worth
-# reviewing: types, lint, tests with coverage, the data validator's self-test, and
-# a full production build including the prerender.
-#
-# The build is the interesting one. It is a single-page site whose HTML is
-# generated, so a change can typecheck, lint, pass every test, and still produce
-# a document with no content in it. The build step is what catches that, and
-# these are its assertions.
+# warn on every run.
 
 on:
   push:
@@ -28,6 +19,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '12.5.1'
+
 jobs:
   check:
     name: Typecheck, lint, test, build
@@ -39,11 +34,11 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 12.5.1
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - name: Install
@@ -73,11 +68,6 @@ jobs:
         # document to every crawler that does not run JavaScript.
         run: pnpm assert:build
 
-      - name: Content consistency
-        # The page states its own numbers in headings — "Six areas. One
-        # company.", "eleven products". Adding a product leaves those wrong with
-        # nothing to notice, which is what this catches.
-
       - name: Build-assertion self-test
         # Corrupts the built document six ways and asserts the assertion above
         # rejects each, then restores it. A guard never seen to fire is not a
@@ -91,6 +81,110 @@ jobs:
           path: dist
           retention-days: 7
 
+  e2e:
+    name: Browser tests (Chromium, Firefox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: check
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install browsers
+        # WebKit is installed but not enabled: it needs libevent-2.1-7t64,
+        # libavif16 and libmanette-0.2.0, which ubuntu-latest does not carry
+        # without `playwright install-deps`. Uncommenting its project in
+        # playwright.config.ts is all that is needed once it is available.
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Build
+        # The suite runs against the prerendered build served with the real
+        # vercel.json headers, not a dev server, because those are what
+        # production serves.
+        run: pnpm build
+
+      - name: Run browser tests
+        run: pnpm test:e2e
+
+      - name: Upload the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+      - name: Upload traces on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
+
+  smoke:
+    name: Deployment smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: check
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Smoke test the build
+        # Same checks against a local server, so the suite itself is exercised on
+        # every run even before a deployment exists.
+        run: |
+          PORT=4175 node scripts/serve-with-headers.mjs &
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:4175/ && break
+            sleep 1
+          done
+          node scripts/smoke.mjs http://127.0.0.1:4175
+
+      - name: Smoke test a deployed URL
+        # Set a repository variable named SMOKE_URL to a deployed preview or
+        # production host to have this run against it. Without one the job
+        # reports and stops rather than pretending to have checked anything.
+        if: ${{ vars.SMOKE_URL != '' }}
+        env:
+          SITE_URL: ${{ vars.SITE_URL || vars.SMOKE_URL }}
+        run: node scripts/smoke.mjs ${{ vars.SMOKE_URL }}
+
+      - name: No deployment URL configured
+        if: ${{ vars.SMOKE_URL == '' }}
+        run: |
+          echo "::notice::No SMOKE_URL repository variable is set, so the deployed"
+          echo "::notice::environment was not checked. Set one to have this job verify"
+          echo "::notice::a real deployment's endpoints, headers and assets."
+
   security:
     name: Security and dependency audit
     runs-on: ubuntu-latest
@@ -101,11 +195,11 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 12.5.1
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - name: Install
@@ -119,6 +213,5 @@ jobs:
 
       - name: Assert the security headers are still strong
         # Checks the policy for its properties rather than an exact string, so
-        # tightening it does not break the build and weakening it — adding
-        # 'unsafe-inline', dropping HSTS — does.
+        # tightening it does not break the build and weakening it does.
         run: pnpm assert:headers

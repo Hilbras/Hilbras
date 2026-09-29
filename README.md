@@ -35,14 +35,16 @@ not run JavaScript, then hydrated.
   - [Adding a product](#adding-a-product)
   - [Adding a technology area](#adding-a-technology-area)
   - [Product status](#product-status)
-  - [Changing the domain](#changing-the-domain)
+  - [Environments](#environments)
 - [Design language](#design-language)
 - [Accessibility](#accessibility)
 - [SEO and structured data](#seo-and-structured-data)
 - [Security](#security)
 - [Performance](#performance)
 - [Testing](#testing)
+- [Environments](#environments)
 - [CI/CD](#cicd)
+- [Deployment verification](#deployment-verification)
 - [Deploying](#deploying)
 - [Contributing](#contributing)
 - [Releasing](#releasing)
@@ -65,6 +67,7 @@ two share a way of working as well as a look.
 | Types | TypeScript 5.9, `strict` + `noUnusedLocals` + `noUnusedParameters` |
 | Lint | ESLint 10 flat config, `typescript-eslint`, `react-hooks` |
 | Unit tests | Vitest 3 with happy-dom, `@testing-library/react`, v8 coverage |
+| Browser tests | Playwright 1.63, Chromium and Firefox |
 | Fonts | Geist + Geist Mono, self-hosted, `latin` and `latin-ext` subsets |
 | Rendering | Prerendered to static HTML, then hydrated |
 | Hosting | Vercel, static output |
@@ -98,25 +101,32 @@ pnpm lint               # eslint .
 pnpm test               # vitest run
 pnpm test:watch         # vitest
 pnpm test:coverage      # vitest run --coverage (gated)
+pnpm test:e2e           # playwright test, both browsers
+pnpm test:e2e:ui        # playwright test --ui
 pnpm validate           # data-layer consistency, run inside the build
 pnpm seo                # robots.txt, sitemap.xml, site.webmanifest
-pnpm serve:headers      # dist/ with the real vercel.json headers, for testing CSP
+pnpm icons             # regenerate the application icons from favicon.svg
+pnpm smoke              # deployment checks against a URL
+pnpm serve:headers      # dist/ with the real vercel.json headers
 
-pnpm check              # everything below, in order — run this before pushing
+pnpm check              # everything below — run this before pushing
 pnpm assert:build       # the built document is crawlable
 pnpm assert:headers     # the security policy is strong
-pnpm assert:content     # the numbers in the copy match the data
-
 pnpm verify:validator   # proves assert-style checks actually fire
 pnpm verify:build-assertion
+pnpm check:all          # check + the browser suite
 ```
 
 `pnpm check` is the whole gate:
 
 ```text
 typecheck → lint → tests + coverage → validator self-test
-          → build → build-output assertions → header assertions → content assertions
+          → build → build-output assertions → header assertions → smoke
 ```
+
+`pnpm check:all` adds the browser suite, which needs a build first and is slow
+enough to keep out of the inner loop. `pnpm check` is what CI's `check` job and
+`e2e` job both gate on.
 
 ## Architecture
 
@@ -195,6 +205,11 @@ src/
 │   ├── structuredData.ts     the JSON-LD graph
 │   ├── validation.ts         the rules the build enforces
 │   └── *.test.ts
+├── components/navbar/
+│   ├── Navbar.tsx            the arrangement: nothing else
+│   ├── ProductsMenu.tsx      the disclosure and its panel
+│   ├── NavigationParts.tsx   the actions cluster and the mobile menu
+│   └── useHoverIntent.ts     the two timers, and Escape
 ├── pages/
 │   └── HomePage.tsx          section order, and nowhere else
 ├── test/
@@ -203,20 +218,33 @@ src/
 ├── main.tsx                  hydration entry
 └── index.css                 fonts, tokens, components, motion
 
+tests/
+├── e2e/
+│   ├── fixtures.ts           collects console errors, failures, hydration warnings
+│   ├── homepage.spec.ts      content, prerendered HTML, hydration, overflow
+│   ├── navigation.spec.ts    the disclosure: click, hover, Escape, focus
+│   ├── mobile.spec.ts        the menu below the large breakpoint
+│   ├── theme.spec.ts         preference, persistence, storage failure, reduced motion
+│   ├── accessibility.spec.ts skip link, focus rings, names, heading order
+│   ├── links.spec.ts         rel, target, announcements, dead anchors
+│   └── performance.spec.ts   canvas size, long tasks, layout shift, third parties
+
 scripts/
 ├── prerender.mjs             markup injection, metadata generation, JSON-LD
 ├── generate-seo.mjs          robots / sitemap / manifest
+├── generate-icons.mjs        application icons, rendered from favicon.svg
 ├── validate-data.mjs         fails the build on inconsistent data
 ├── assert-build-output.mjs   the built document is crawlable
 ├── assert-security-headers.mjs  the policy is strong
-├── assert-content.mjs        the numbers in the copy match the data
 ├── serve-with-headers.mjs    dist/ with the real vercel.json headers
+├── smoke.mjs                 deployment checks, against any URL
 ├── verify-validator.mjs      proves the validator rejects bad data
 ├── verify-build-assertion.mjs  proves the build assertions fire
 └── og-template.html          editable source for public/og.png
 
 public/
 ├── fonts/                    4 woff2 subsets, self-hosted
+├── icons/                    192, 512 and a maskable 512, generated
 ├── favicon.svg  og.png
 └── theme-init.js             theme + has-js, before first paint
 
@@ -297,16 +325,41 @@ so on its card rather than linking nowhere.
 The definition is attached to the pill as a `title`, so a reader is never left to
 infer whether `Alpha` means production-ready.
 
-### Changing the domain
+### Environments
 
-`site.domain` in `src/data/site.ts` is the only place. The prerender rewrites the
-canonical, Open Graph and Twitter URLs from it; `generate-seo.mjs` writes robots,
-sitemap and manifest from it; the JSON-LD builds every `@id` and `url` from it;
-and `assert-build-output.mjs` fails if any unexpected external origin appears in
-the output.
+`site.domain` in `src/data/site.ts` is the committed default. `SITE_URL`
+overrides it at build time, resolved through one function in `src/data/url.ts` so
+the document, sitemap, robots, manifest and JSON-LD cannot disagree.
 
-Before switching, also regenerate the social image — its footer text lives in
-`scripts/og-template.html`.
+```bash
+pnpm build                                    # uses site.domain
+SITE_URL=https://hilbras-git-abc.vercel.app pnpm build   # preview identity
+```
+
+Without this, a preview deployment publishes the production canonical, Open Graph
+and JSON-LD identity — so a crawler that indexes a preview records production URLs
+as the address of preview content. Every published URL follows the override
+except third-party references, which are left alone. A malformed `SITE_URL` falls
+back with a warning rather than propagating into every URL, and
+`assert-build-output.mjs` fails if a preview build published a production
+identifier.
+
+On Vercel, set `SITE_URL` per environment: production to the canonical domain, and
+preview to the deployment URL — Vercel exposes it as `VERCEL_URL`.
+
+Before switching domains, also regenerate the social image — its footer text
+lives in `scripts/og-template.html`.
+
+### Deploying
+
+`vercel.json` pins the framework, build command, output directory, cache rules
+and headers, so a Vercel project needs no further configuration.
+
+```bash
+vercel link
+vercel --prod
+node scripts/smoke.mjs https://hilbras.vercel.app
+```
 
 ## Design language
 
@@ -402,7 +455,10 @@ Generated at build time:
 - `robots.txt` — allows everything, points at the sitemap.
 - `sitemap.xml` — one route, `lastmod` from `site.lastModified`. Product pages
   belong here when they exist.
-- `site.webmanifest` — name, colours, icons.
+- `site.webmanifest` — name, colours, and real application icons: 192, 512 and a
+  maskable 512 generated from `favicon.svg` by `pnpm icons`. It previously used
+  the 1200×630 social card, which is the wrong aspect ratio for every icon
+  consumer and is cropped to nothing by Android's adaptive mask.
 
 Structured data is one JSON-LD block in `<head>`, built from the same data the
 cards render from, so it cannot drift from what a visitor sees:
@@ -416,8 +472,16 @@ cards render from, so it cannot drift from what a visitor sees:
 | `system` | `OperatingSystem` | `OperatingSystem` |
 
 Plus one `Organization` and one `WebSite`, `codeRepository` and `hasPart` where
-they exist, and `creativeWorkStatus` carrying maturity. Hilbras OS publishes
-`operatingSystem: Linux` rather than claiming to be cross-platform.
+they exist, and `creativeWorkStatus` carrying maturity.
+
+`operatingSystem` is emitted only where it is informative. It was
+`"Cross-platform"` on all eleven nodes, which tells a crawler nothing and drowns
+out the one product with a specific answer; Hilbras OS is Ubuntu-based and says
+`Linux`, and the rest omit it rather than assert the obvious.
+
+Every absolute URL is built from the resolved origin, so `SITE_URL` moves the
+canonical, Open Graph, sitemap, robots, manifest and JSON-LD together — see
+[environments](#environments).
 
 `assert-build-output.mjs` checks the document has a doctype, a lang, a
 description, a canonical, Open Graph and Twitter tags, a manifest link and the
@@ -507,36 +571,69 @@ field.
 ## Testing
 
 ```bash
-pnpm test              # 56 tests
-pnpm test:coverage     # with the thresholds enforced
+pnpm test            # 81 unit and component tests
+pnpm test:coverage   # with the thresholds enforced
+pnpm test:e2e        # 46 tests across Chromium and Firefox
+pnpm check:all       # everything
 ```
 
-Three layers, and the first is the one that matters most because a regression
-there is silent.
+Four layers. The first three are fast; the browser suite needs a build first.
 
 **Data and logic** (`src/data/*.test.ts`) — unique ids and names, ids safe as URL
 fragments, every product in a real area, every area referencing a real product,
 repository URLs inside the organisation, nothing marked stable without something
-publicly released, link helpers, and the structured data: one node per product,
-every identifier built from the configured domain, each product typed by what it
-is rather than as a developer application, an operating system that is not
-published as cross-platform, no `softwareVersion` abuse, and nothing that could
-break out of the script element.
+publicly released, link helpers, origin resolution including malformed
+`SITE_URL` values, and the structured data: one node per product, every identifier
+built from the resolved origin, each product typed by what it is, no
+`operatingSystem` where it says nothing, and nothing that could break out of the
+script element.
 
-**Components** (`src/components/components.test.tsx`) — the status pill states a
-level and explains it, the product card says plainly when there is no public
-release, the navigation disclosure's `aria-expanded` and focus return, the theme
-toggle's static label and storage write, the footer, the connection map, and the
-whole page's link integrity.
+**Components** (`src/components/*.test.tsx`) — the status pill states a level and
+explains it, the product card says plainly when there is no public release, the
+disclosure's `aria-expanded` and focus return, the theme toggle's persistence
+rules, the footer, the connection map, and the whole page's link integrity.
+`counts.test.tsx` renders each section and checks the numbers in its headings
+against `counts`, so the copy cannot contradict the data.
+
+**Browser** (`tests/e2e/`) — the real build, served with the real `vercel.json`
+headers. Against a dev server the prerender never runs; without the headers every
+interaction the CSP could block passes vacuously. Covers homepage content and
+prerendered HTML, hydration, the disclosure on click, hover, Escape and focus
+return, the mobile menu, theme preference and persistence and storage failure,
+reduced motion, the skip link and focus visibility and heading order, link
+`rel`/`target`/announcements, and runtime cost.
 
 **Self-tests** — `verify:validator.mjs` breaks the product data nine different
 ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts the
 built document six ways and asserts the assertions reject each. A check nobody
 has seen fail is not known to work.
 
-Coverage is gated on `areas.ts`, `links.ts` and `structuredData.ts`.
+Coverage is gated on `areas.ts`, `links.ts`, `url.ts` and `structuredData.ts`.
 `validation.ts` is deliberately excluded rather than the bar being lowered: its
 error branches only execute on invalid data, which is the self-test's job.
+
+### What the browsers disagreed about
+
+Running the same suite in two engines is what found these:
+
+- `networkidle` never settles in Firefox. `gotoHome` waits for the heading
+  instead, which is what the tests need and what Playwright recommends.
+- Firefox runs this suite at about a third of Chromium's speed, so a 30 s
+  timeout failed intermittently. Now 60 s, with the reason recorded.
+- Firefox cannot emulate `prefers-color-scheme` on the host this was built on —
+  the context option is accepted and ignored, and `matchMedia` always reports
+  false. Those three tests are scoped to Chromium with the reason in the file,
+  not deleted, so they resume covering Firefox wherever emulation works.
+- The 80 ms hover-intent delay is shorter than Playwright's round trip to
+  Firefox, so "still closed immediately after hover" passed in one browser and
+  failed in the other with identical behaviour. That assertion was measuring the
+  delay rather than the requirement; it now asserts that focus alone does not
+  open the menu.
+
+WebKit is configured in `playwright.config.ts` and not enabled: it needs three
+system libraries that need root. Safari is untestable on the build host, and Edge
+shares Chromium's engine so the Chromium project covers its behaviour, but its
+own shell is unverified.
 
 ### A race the tests found
 
@@ -558,30 +655,47 @@ Both fixed, with a test that asserts the close wins deterministically.
 
 ## CI/CD
 
-`.github/workflows/ci.yml`, on every push and pull request to `main`. Same gates
-as `pnpm check`, so nothing passes on a laptop and fails in CI.
+`.github/workflows/ci.yml`, on every push and pull request to `main`. Four jobs,
+gating on the same commands as `pnpm check`.
 
-**Job `check`** — install with a frozen lockfile, typecheck, lint, tests with
-coverage, the validator self-test, a full production build, the build-output
-assertions, the content assertions, and the build-assertion self-test. Uploads
-`dist/` as an artifact.
-
-**Job `security`** — `pnpm audit --audit-level=high --prod` and the header
-assertions. A dev-only advisory is reported but does not fail the build, since it
-cannot reach a visitor.
+| Job | Does |
+| --- | --- |
+| `check` | install, typecheck, lint, tests with coverage, validator self-test, build, build-output assertions, build-assertion self-test, uploads `dist/` |
+| `e2e` | installs Chromium and Firefox, builds, runs the browser suite, uploads the report and any traces on failure |
+| `smoke` | runs `scripts/smoke.mjs` against a local server, and against `vars.SMOKE_URL` if one is configured |
+| `security` | `pnpm audit --audit-level=high --prod` and the header assertions |
 
 The build step is worth having on this repository in particular: it is a
 single-page site whose HTML is generated, so a change can typecheck, lint, pass
 every test, and still produce a document with no content in it.
 
-## Deploying
+The `smoke` job checks a local server every run so the suite itself is exercised,
+and reports a `::notice::` rather than pretending when no deployment URL is
+configured.
 
-`vercel.json` pins the framework, build command, output directory, cache rules
-and headers, so a Vercel project needs no further configuration.
+## Deployment verification
+
+`scripts/smoke.mjs` runs against any URL, because a build can be correct and a
+deployment still be wrong — a missing header, a rewrite that strips a query, a
+CDN serving a stale `index.html`. None of those fail a local check.
 
 ```bash
-vercel link
+node scripts/smoke.mjs https://hilbras.vercel.app
+```
+
+It verifies seven endpoints return 200 with the right content type and real
+content; the document's title, description, canonical, Open Graph and Twitter
+tags, manifest link and prerendered text; that the canonical names the expected
+origin; that the `og:image` resolves to a fetchable image rather than a
+directory; that there is one `h1` and no dead anchors; that the JSON-LD parses
+with no foreign origin; that the policy has no `unsafe-inline` and the transport
+headers are present; and that every asset the document references loads.
+
+## Deploying
+
+```bash
 vercel --prod
+node scripts/smoke.mjs https://hilbras.vercel.app
 ```
 
 **The repository is private**, so there is no Vercel Git integration and deploys
@@ -590,8 +704,8 @@ account explicitly or making the repository public.
 
 Before a real launch:
 
-- **A domain.** Set `site.domain` and rebuild. See
-  [changing the domain](#changing-the-domain) for what is already handled.
+- **A domain.** Set `SITE_URL` (or `site.domain`) and rebuild. See
+  [environments](#environments) for what is already generated from it.
 - **The social image.** `public/og.png` is a committed artifact;
   `scripts/og-template.html` is its editable source. Render at 1200×630.
 - **Search Console.** Submit `sitemap.xml`. Needs a human.
