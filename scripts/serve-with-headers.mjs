@@ -13,6 +13,9 @@ import { extname, join, normalize } from 'node:path';
 const dist = new URL('../dist/', import.meta.url).pathname;
 const vercel = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
 
+// Overridable so the end-to-end suite can pick its own port.
+const port = Number(process.env.PORT ?? 4175);
+
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -61,6 +64,6 @@ createServer(async (req, res) => {
   } catch (error) {
     res.writeHead(500).end(String(error));
   }
-}).listen(4175, '127.0.0.1', () => {
-  console.log('csp-test: serving dist/ on http://127.0.0.1:4175 with the vercel.json headers');
+}).listen(port, '127.0.0.1', () => {
+  console.log(`headers: serving dist/ on http://127.0.0.1:${port} with the vercel.json headers`);
 });

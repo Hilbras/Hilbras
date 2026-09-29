@@ -20,8 +20,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const distIndex = join(root, 'dist', 'index.html');
 const ssrEntry = join(root, '.ssr', 'entry-server.mjs');
 
-const { render, site, buildStructuredDataDocument } = await import(ssrEntry);
-const origin = site.domain.replace(/\/+$/, '');
+const { render, site, buildStructuredDataDocument, resolveSiteUrl } = await import(ssrEntry);
+// SITE_URL wins over the committed domain, so a preview deployment publishes its
+// own identity in every canonical, Open Graph and JSON-LD URL.
+const origin = resolveSiteUrl();
 const markup = render();
 let html = await readFile(distIndex, 'utf8');
 
@@ -95,5 +97,6 @@ await rm(join(root, '.ssr'), { recursive: true, force: true });
 
 console.log(
   `prerender: injected ${(markup.length / 1024).toFixed(1)} kB of markup, ` +
-    `${(html.length / 1024).toFixed(1)} kB document, origin ${origin}`,
+    `${(html.length / 1024).toFixed(1)} kB document, origin ${origin}` +
+    (origin === site.domain.replace(/\/+$/, '') ? '' : ' (from SITE_URL)'),
 );

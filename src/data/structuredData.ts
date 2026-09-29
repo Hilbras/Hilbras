@@ -1,5 +1,6 @@
 import { areas, products, productSchemas, type Product } from './areas';
 import { site } from './site';
+import { resolveSiteUrl } from './url';
 
 type JsonNode = Record<string, unknown>;
 
@@ -22,12 +23,12 @@ const maturity: Record<string, 'InProgress' | 'Published'> = {
  * visible copy cannot drift apart. Returns a bare array: the `@graph` wrapper
  * and the `@context` are added by whoever serialises it.
  */
-export function buildGraph(): JsonNode[] {
+export function buildGraph(origin: string = resolveSiteUrl()): JsonNode[] {
   const organisation: JsonNode = {
     '@type': 'Organization',
-    '@id': `${site.domain}/#organization`,
+    '@id': `${origin}/#organization`,
     name: site.name,
-    url: site.domain,
+    url: origin,
     slogan: site.tagline,
     description: site.description,
     foundingDate: site.organisation.founding,
@@ -38,12 +39,12 @@ export function buildGraph(): JsonNode[] {
     organisation,
     {
       '@type': 'WebSite',
-      '@id': `${site.domain}/#website`,
-      url: site.domain,
+      '@id': `${origin}/#website`,
+      url: origin,
       name: site.name,
       description: site.description,
       inLanguage: 'en',
-      publisher: { '@id': `${site.domain}/#organization` },
+      publisher: { '@id': `${origin}/#organization` },
     },
   ];
 
@@ -51,20 +52,28 @@ export function buildGraph(): JsonNode[] {
     const schema = productSchemas[product.kind];
     const node: JsonNode = {
       '@type': schema.type,
-      '@id': `${site.domain}/#product-${product.id}`,
+      '@id': `${origin}/#product-${product.id}`,
       name: product.name,
       description: product.description,
-      url: product.href ?? `${site.domain}/#products`,
+      url: product.href ?? `${origin}/#products`,
       applicationCategory: schema.category,
       // Maturity, in the vocabulary schema.org actually defines. The longer
       // explanation of what `alpha` promises lives in statusDefinitions and is
       // surfaced on the card, not smuggled into `softwareVersion`.
       creativeWorkStatus: maturity[product.status],
-      operatingSystem: product.platform ?? 'Cross-platform',
-      provider: { '@id': `${site.domain}/#organization` },
-      publisher: { '@id': `${site.domain}/#organization` },
+      provider: { '@id': `${origin}/#organization` },
+      publisher: { '@id': `${origin}/#organization` },
       about: areasFor(product).map((name) => ({ '@type': 'Thing', name })),
     };
+
+    // Only when it is informative.
+    //
+    // "Cross-platform" used to be emitted for every product, which made the
+    // property worthless: a crawler learns nothing from a value that is true of
+    // essentially everything, and it drowns out the one product where the answer
+    // is specific. Hilbras OS is Ubuntu-based and says Linux; the rest omit it
+    // rather than assert the obvious.
+    if (product.platform) node.operatingSystem = product.platform;
 
     if (product.repository) {
       node.codeRepository = product.repository;
@@ -83,7 +92,13 @@ function areasFor(product: Product): string[] {
   return areas.filter((area) => area.products.includes(product.id)).map((area) => area.name);
 }
 
-/** The complete document, ready to drop into a `<script type="application/ld+json">`. */
-export function buildStructuredDataDocument(): string {
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': buildGraph() });
+/**
+ * The complete document, ready to drop into a `<script type="application/ld+json">`.
+ *
+ * The origin is a parameter so a caller can build a preview's structured data
+ * against the preview's own domain rather than the committed one. It defaults to
+ * the resolved build origin, which is `SITE_URL` when set.
+ */
+export function buildStructuredDataDocument(origin: string = resolveSiteUrl()): string {
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': buildGraph(origin) });
 }

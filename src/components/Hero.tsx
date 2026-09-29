@@ -1,13 +1,16 @@
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { areas } from '../data/areas';
-import { heroAssurances, site } from '../data/site';
+import { counts, heroAssurances, site, spell } from '../data/site';
 import { GitHubMark } from './ui/GitHubMark';
 import { AssuranceRow } from './ui/AssuranceRow';
 import { HilbrasMark, Mark } from './ui/Mark';
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-line/70">
+    // Labelled like every other section. A <section> with no accessible name is
+    // not exposed as a region at all, so this one was a landmark that existed in
+    // the markup and nowhere in the accessibility tree.
+    <section id="intro" aria-labelledby="intro-heading" className="relative overflow-hidden border-b border-line/70">
       <div aria-hidden="true" className="bg-glow absolute inset-x-0 top-0 h-[620px] opacity-70" />
       <div aria-hidden="true" className="grid-wash absolute inset-x-0 top-0 h-[620px] opacity-35" />
 
@@ -20,7 +23,7 @@ export function Hero() {
             An independent technology company
           </span>
 
-          <h1 className="display-title hero-in hero-in-2 mx-auto mt-6 max-w-4xl text-balance">
+          <h1 id="intro-heading" className="display-title hero-in hero-in-2 mx-auto mt-6 max-w-4xl text-balance">
             Build. Connect. <span className="gold-text">Create.</span>
           </h1>
 
@@ -58,7 +61,9 @@ export function Hero() {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate font-mono text-[11px] font-medium tracking-wide">hilbras / ecosystem</p>
-                  <p className="muted mt-0.5 text-[10px]">six technology areas · eleven products</p>
+                  <p className="muted mt-0.5 text-[10px]">
+                    {spell(counts.areas)} technology areas · {spell(counts.products)} products
+                  </p>
                 </div>
               </div>
               <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold/30 bg-gold-soft px-2.5 py-1 font-mono text-[10px] text-gold-text">

@@ -1,4 +1,5 @@
 import { products } from '../data/areas';
+import { counts, sentence, spell } from '../data/site';
 import { FeaturedProductCard, ProductGrid } from './ProductCard';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
@@ -16,7 +17,11 @@ export function Products() {
         id="products-heading"
         eyebrow="Featured products"
         title="What exists today, and what is still being built."
-        lede="Four products lead the ecosystem today. The rest are earlier, and four of those seven already have a public repository — so you can follow the shape of the company as it grows."
+        lede={
+          `${sentence(counts.featured)} products lead the ecosystem today. The rest are earlier, and ` +
+          `${spell(counts.othersPublic)} of those ${spell(counts.others)} already have a public repository ` +
+          '— so you can follow the shape of the company as it grows.'
+        }
       />
 
       {featured.length > 0 ? (

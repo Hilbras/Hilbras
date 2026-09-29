@@ -7,6 +7,13 @@ type ProductLinkProps = {
   className?: string;
   children: ReactNode;
   onClick?: () => void;
+  /**
+   * For a link whose visible text does not already name the product — an
+   * icon-only control, say. Every current caller renders the name, so the
+   * announcement stays short; without this the name is read twice, because
+   * `children` has already spoken it.
+   */
+  nameIsNotVisible?: boolean;
 };
 
 /**
@@ -17,7 +24,7 @@ type ProductLinkProps = {
  * announcement for screen readers. Six components were each reimplementing that
  * decision, and two of them had shipped it slightly differently.
  */
-export function ProductLink({ product, className, children, onClick }: ProductLinkProps) {
+export function ProductLink({ product, className, children, onClick, nameIsNotVisible }: ProductLinkProps) {
   const href = productHref(product);
   const external = isExternalHref(href);
 
@@ -30,7 +37,11 @@ export function ProductLink({ product, className, children, onClick }: ProductLi
       rel={externalRel(href)}
     >
       {children}
-      {external ? <span className="sr-only"> — {product.name} (opens in a new tab)</span> : null}
+      {external ? (
+        <span className="sr-only">
+          {nameIsNotVisible ? ` — ${product.name}` : ''} (opens in a new tab)
+        </span>
+      ) : null}
     </a>
   );
 }

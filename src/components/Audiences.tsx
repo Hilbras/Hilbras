@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import { audiences } from '../data/site';
+import { audiences, counts, sentence } from '../data/site';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
 
@@ -9,7 +9,7 @@ export function Audiences() {
       <SectionHeader
         id="built-for-heading"
         eyebrow="Built for"
-        title="Three audiences, three different entry points."
+        title={`${sentence(counts.audiences)} audiences, three different entry points.`}
         lede="You should be able to find the part of Hilbras that matters to you without reading the other two."
       />
 

@@ -1,4 +1,5 @@
 import { BrainCircuit, Code2, Cpu, Globe, Lock, Users, type LucideIcon } from 'lucide-react';
+import { counts, sentence } from '../data/site';
 import { areas, type AreaId } from '../data/areas';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
@@ -38,7 +39,7 @@ export function Technology() {
         id="technology-heading"
         eyebrow="Technology areas"
         title="What Hilbras actually builds."
-        lede="Six areas, described in terms of the work rather than the product name. Most projects in the ecosystem live in more than one of them."
+        lede={`${sentence(counts.areas)} areas, described in terms of the work rather than the product name. Most projects in the ecosystem live in more than one of them.`}
       />
 
       <ul className="stagger mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

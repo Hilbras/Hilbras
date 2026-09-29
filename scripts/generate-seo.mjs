@@ -16,8 +16,8 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ssrEntry = join(root, '.ssr', 'entry-server.mjs');
 
-const { site } = await import(ssrEntry);
-const origin = site.domain.replace(/\/+$/, '');
+const { site, resolveSiteUrl } = await import(ssrEntry);
+const origin = resolveSiteUrl();
 
 const robots = `User-agent: *
 Allow: /
@@ -53,12 +53,27 @@ const manifest = `${JSON.stringify(
     description: site.description,
     start_url: '/',
     scope: '/',
+    id: '/',
     display: 'standalone',
+    // The dark brand surface, so a launch on a light home screen does not flash
+    // white before the app paints.
     background_color: '#0c0b09',
     theme_color: '#0c0b09',
+    lang: 'en',
+    dir: 'ltr',
+    categories: ['developer', 'productivity', 'utilities'],
+    // Real application icons in the shapes consumers expect. This previously
+    // listed the 1200x630 social card, which every icon consumer resamples from
+    // the wrong aspect ratio and Android's adaptive-icon mask crops to nothing.
+    // Generated from public/favicon.svg by scripts/generate-icons.mjs.
     icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      // The vector mark, for consumers that prefer it and for high-density
+      // contexts. Kept last: it has no intrinsic size, so a consumer that
+      // cannot measure it should fall through to the PNGs above.
       { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-      { src: '/og.png', sizes: '1200x630', type: 'image/png' },
     ],
   },
   null,

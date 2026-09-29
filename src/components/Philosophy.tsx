@@ -1,4 +1,4 @@
-import { principles } from '../data/site';
+import { counts, principles, sentence } from '../data/site';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
 
@@ -13,7 +13,7 @@ export function Philosophy() {
       <SectionHeader
         id="philosophy-heading"
         eyebrow="Our philosophy"
-        title="Five commitments we can be held to."
+        title={`${sentence(counts.principles)} commitments we can be held to.`}
         lede="Not slogans. These are the rules we use to decide whether a Hilbras project is finished."
       />
 

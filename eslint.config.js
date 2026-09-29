@@ -21,9 +21,22 @@ export default tseslint.config(
     },
   },
   {
-    files: ['vite.config.ts', 'eslint.config.js'],
+    files: ['vite.config.ts', 'eslint.config.js', 'playwright.config.ts', 'vitest.config.ts', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    // The end-to-end tests are not React and do not run in a browser document.
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      // Playwright fixtures name their callback `use`, which is the React hook
+      // convention and nothing to do with React. The rule cannot tell the
+      // difference, so it is off here rather than suppressed inline eight times.
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 );

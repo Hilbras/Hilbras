@@ -26,7 +26,7 @@ const FRAME_INTERVAL_MS = 1000 / 30;
  * A slow drifting node field behind the whole page. Reads as a network, which is
  * the one idea the site keeps returning to.
  *
- * Three things keep it cheap, and the measurements are why:
+ * Four things keep it cheap, and the numbers are why:
  *
  * - `Math.sqrt` instead of `Math.hypot`. The pair loop is the only real work
  *   here, and `hypot` is written to survive overflow that a canvas coordinate
@@ -40,6 +40,23 @@ const FRAME_INTERVAL_MS = 1000 / 30;
  *   The canvas is fixed and full-viewport, so it does not change size when a
  *   mobile browser hides its URL bar — but a window listener still fires, and
  *   the old handler rebuilt the entire field on every one of those events.
+ * - 30 fps rather than the display rate, which is invisible at 0.2 px per frame
+ *   and halves the work.
+ *
+ * On pausing when the section scrolls out of view: that does not apply here, and
+ * it is worth being precise about why rather than adding a no-op observer. The
+ * canvas is `position: fixed` and covers the viewport, so an
+ * `IntersectionObserver` on it reports intersecting continuously — it is never
+ * offscreen, no matter where the page is scrolled. Scoping the field to the hero
+ * would make the observation meaningful, and would also mean the rest of the page
+ * has no background, which is a design change rather than an optimisation.
+ *
+ * What actually stops the work is the tab being hidden, which `visibilitychange`
+ * handles, and that is the only real offscreen condition this element has. The
+ * one genuine bug of this kind was a size, not a lifetime: an ancestor
+ * `transform` made this element's containing block the document, so it sized to
+ * 10,584px and cleared 15 million pixels a frame. `tests/e2e/theme.spec.ts`
+ * asserts the canvas is viewport-sized for exactly that reason.
  *
  * Under `prefers-reduced-motion` it paints a single static frame instead of
  * animating, so the texture survives without the movement.

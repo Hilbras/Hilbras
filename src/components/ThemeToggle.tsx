@@ -4,10 +4,24 @@ type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'hilbras-theme';
 
+/** The theme the visitor explicitly chose, or null if they never have. */
+function getStoredTheme(): Theme | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'light' || stored === 'dark' ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * No `document` during the prerender pass. The inline head script has already
- * applied the stored theme before first paint, so the server simply renders the
- * default and the correct icon appears with the stylesheet.
+ * The theme to render with.
+ *
+ * An explicit choice wins; otherwise the system preference applies. There is no
+ * `document` during the prerender pass, so the server renders the documented
+ * default and the correct icon appears with the stylesheet — the head script has
+ * already applied the real one before first paint.
  */
 function getTheme(): Theme {
   if (typeof document === 'undefined') return 'dark';
@@ -37,6 +51,9 @@ function SunSparkle() {
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(getTheme);
+  // Whether the visitor has ever chosen. Until they have, the theme follows the
+  // operating system and nothing is written to storage.
+  const [chosen, setChosen] = useState(false);
   // Bumped on every switch to remount the icon and replay its entrance. It is
   // 0 on the server and on the first client render, so the two trees agree.
   const [switches, setSwitches] = useState(0);
@@ -44,12 +61,32 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    // Persisted only once the visitor has actually chosen.
+    //
+    // This used to write on mount as well, which quietly broke the system
+    // preference: the first page load captured it, and from then on the stored
+    // value took precedence over `prefers-color-scheme` forever. Someone who
+    // visited during the day and switched their system to light at night kept
+    // getting the light-mode site at noon, with no way back short of clearing
+    // site data. There is no account here, so the OS setting is the only
+    // expression of preference a visitor has — it has to keep working.
+    if (!chosen) return;
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {
       // The theme still applies for this session when storage is unavailable.
     }
-  }, [theme]);
+  }, [theme, chosen]);
+
+  // Follow the system while no explicit choice exists, so a visitor who has
+  // never touched the toggle gets the theme they have set on their device.
+  useEffect(() => {
+    if (getStoredTheme() !== null) return;
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (event: MediaQueryListEvent) => setTheme(event.matches ? 'dark' : 'light');
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => () => window.clearTimeout(animationTimer.current), []);
 
@@ -66,6 +103,7 @@ export function ThemeToggle() {
         document.documentElement.classList.remove('theme-anim');
       }, 450);
     }
+    setChosen(true);
     setTheme(nextTheme);
     setSwitches((count) => count + 1);
   }

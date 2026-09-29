@@ -53,10 +53,29 @@ describe('structured data', () => {
     }
   });
 
-  it('does not publish an operating system as cross-platform', () => {
+  it('publishes an operating system only where it is informative', () => {
     const os = productNodes.find((n) => n['@type'] === 'OperatingSystem');
     expect(os).toBeDefined();
     expect(os?.operatingSystem).toBe('Linux');
+
+    // "Cross-platform" used to be on every node, which is a value that tells a
+    // crawler nothing. The property is now emitted only where it differs.
+    const declared = productNodes.filter((n) => n.operatingSystem !== undefined);
+    expect(declared.map((n) => n.operatingSystem)).toEqual(['Linux']);
+  });
+
+  it('never publishes the string "Cross-platform" as an operating system', () => {
+    for (const node of productNodes) {
+      expect(node.operatingSystem, String(node.name)).not.toBe('Cross-platform');
+    }
+  });
+
+  it('publishes an operating system for exactly the products that declare one', () => {
+    const declaring = new Set(products.filter((p) => p.platform).map((p) => p.name));
+    for (const node of productNodes) {
+      if (declaring.has(String(node.name))) expect(node.operatingSystem, String(node.name)).toBeTruthy();
+      else expect(node, `${node.name} declares no platform`).not.toHaveProperty('operatingSystem');
+    }
   });
 
   it('does not abuse softwareVersion to carry a status sentence', () => {

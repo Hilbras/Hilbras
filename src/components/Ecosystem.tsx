@@ -1,4 +1,5 @@
 import { areas, productsInArea } from '../data/areas';
+import { counts, sentence } from '../data/site';
 import { Mark } from './ui/Mark';
 import { ProductLink } from './ui/ProductLink';
 import { Reveal } from './ui/Reveal';
@@ -10,7 +11,7 @@ export function Ecosystem() {
       <SectionHeader
         id="ecosystem-heading"
         eyebrow="The Hilbras ecosystem"
-        title="Six areas. One company."
+        title={`${sentence(counts.areas)} areas. One company.`}
         lede="The ecosystem is organised by what the technology does, not by when it shipped. A product can sit in more than one area — that is usually the interesting part."
       />
 

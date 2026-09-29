@@ -162,6 +162,62 @@ describe('ThemeToggle', () => {
     expect(localStorage.getItem('hilbras-theme')).toBe('light');
   });
 
+  it('does not write to storage until the visitor chooses', () => {
+    // The bug this pins: the effect that applies the theme also wrote it, so
+    // the first page load captured the system preference and the stored value
+    // then took precedence over `prefers-color-scheme` permanently. Someone who
+    // visited in the morning and switched their system to light at night was
+    // stuck with the light site at noon, and could not undo it without clearing
+    // site data. There is no account here, so the OS setting is the only
+    // preference a visitor can express until they touch the toggle.
+    document.documentElement.dataset.theme = 'dark';
+    render(<ThemeToggle />);
+    expect(localStorage.getItem('hilbras-theme')).toBeNull();
+  });
+
+  it('leaves an existing stored choice alone on mount', () => {
+    localStorage.setItem('hilbras-theme', 'light');
+    document.documentElement.dataset.theme = 'light';
+    render(<ThemeToggle />);
+    expect(localStorage.getItem('hilbras-theme')).toBe('light');
+  });
+
+  it('follows the system preference while nothing is stored', async () => {
+    // A fresh matchMedia that reports dark, and reports the opposite on change.
+    const listeners: Array<(event: MediaQueryListEvent) => void> = [];
+    let matches = true;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('prefers-color-scheme') ? matches : false,
+      media: query,
+      addEventListener: (_: string, listener: (event: MediaQueryListEvent) => void) => listeners.push(listener),
+      removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+
+    document.documentElement.dataset.theme = 'dark';
+    render(<ThemeToggle />);
+
+    // The visitor's system switches to light.
+    matches = false;
+    listeners.forEach((listener) => listener({ matches: false } as MediaQueryListEvent));
+
+    await vi.waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('light');
+    });
+    // Still nothing written: following the system is not a choice.
+    expect(localStorage.getItem('hilbras-theme')).toBeNull();
+  });
+
+  it('stops following the system once the visitor has chosen', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('hilbras-theme', 'light');
+    document.documentElement.dataset.theme = 'light';
+    render(<ThemeToggle />);
+    // The system is dark, but the stored choice wins and is not overwritten.
+    await user.click(screen.getByRole('button', { name: 'Toggle colour theme' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('hilbras-theme')).toBe('dark');
+  });
+
   it('renders both icons and lets CSS choose, so the two trees cannot disagree', () => {
     const { container } = render(<ThemeToggle />);
     expect(container.querySelector('.theme-icon-light')).toBeInTheDocument();

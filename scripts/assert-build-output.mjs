@@ -134,6 +134,52 @@ if (ldBlocks.length === 1) {
 for (const file of ['robots.txt', 'sitemap.xml', 'site.webmanifest', 'favicon.svg', 'og.png']) {
   check(await exists(file), `${file} was not generated into dist/`);
 }
+// The manifest is a claim about files that must exist at declared dimensions.
+// A manifest referencing a missing or wrongly-sized icon fails silently on
+// every platform, so it is checked rather than assumed.
+const manifest = JSON.parse(await read('dist/site.webmanifest'));
+for (const field of ['name', 'short_name', 'start_url', 'display', 'background_color', 'theme_color']) {
+  check(Boolean(manifest[field]), `the web manifest has no ${field}`);
+}
+check(Array.isArray(manifest.icons) && manifest.icons.length > 0, 'the web manifest has no icons');
+
+const declared = /(\d+)x(\d+)/;
+for (const icon of manifest.icons ?? []) {
+  const file = join(dist, icon.src.replace(/^\//, ''));
+  try {
+    await stat(file);
+  } catch {
+    failures.push(`the web manifest references ${icon.src}, which is not in dist/`);
+    continue;
+  }
+  if (!icon.src.endsWith('.png') || !declared.test(icon.sizes)) continue;
+
+  // Read the PNG header directly rather than decoding the image: the IHDR chunk
+  // carries the dimensions in the first 24 bytes.
+  const { readFile: readBinary } = await import('node:fs/promises');
+  const header = await readBinary(file);
+  const signature = [0x89, 0x50, 0x4e, 0x47].every((byte, index) => header[index] === byte);
+  if (!signature) {
+    failures.push(`${icon.src} is not a PNG`);
+    continue;
+  }
+  const width = header.readUInt32BE(16);
+  const height = header.readUInt32BE(20);
+  const [wantWidth, wantHeight] = icon.sizes.split('x').map(Number);
+  check(
+    width === wantWidth && height === wantHeight,
+    `${icon.src} declares ${icon.sizes} but is ${width}x${height}`,
+  );
+}
+check(
+  (manifest.icons ?? []).some((icon) => icon.purpose === 'maskable'),
+  'the web manifest has no maskable icon, so Android launchers will crop the standard one',
+);
+check(
+  (manifest.icons ?? []).some((icon) => icon.sizes === '192x192'),
+  'the web manifest has no 192x192 icon, which is the size Android requires',
+);
+
 const robots = await read('dist/robots.txt');
 check(robots.includes('Sitemap:'), 'robots.txt does not advertise the sitemap');
 const sitemap = await read('dist/sitemap.xml');
@@ -146,13 +192,35 @@ check(Boolean(site), 'could not read site.domain from src/data/site.ts');
 
 if (site) {
   check(site.endsWith('/') === false, 'site.domain should not end with a slash, or every joined URL doubles it');
+
+  // The build may have been given a different origin through SITE_URL, which is
+  // how a preview deployment gets its own identity. When it has, every published
+  // URL must follow it — a preview serving the production canonical is the exact
+  // failure this guards, and it is invisible until a crawler indexes it.
+  const override = process.env.SITE_URL?.trim().replace(/\/+$/, '');
+  const expected = override && /^https?:\/\//.test(override) ? override : site;
+  if (override && expected !== site) {
+    console.log(`build output: asserting against the SITE_URL origin ${expected}`);
+    check(
+      !flat.includes(`${site}/#`),
+      `the build published ${site} JSON-LD identifiers despite SITE_URL=${override}`,
+    );
+  }
+
   const canonical = flat.match(/rel="canonical" href="([^"]+)"/)?.[1];
-  check(canonical === `${site}/`, `canonical is ${canonical}, expected ${site}/`);
+  check(canonical === `${expected}/`, `canonical is ${canonical}, expected ${expected}/`);
 
   // External hosts that are legitimately published: the organisation's GitHub
   // and any product site in the data. Anything else is a hardcoded domain that
   // survived a migration.
-  const allowed = new Set([site.replace(/\/$/, ''), 'https://github.com', 'https://schema.org']);
+  // Both origins are legitimate: the committed one for a normal build, and the
+  // SITE_URL one when the build was overridden. Anything else is a stray.
+  const allowed = new Set([
+    site.replace(/\/$/, ''),
+    expected.replace(/\/$/, ''),
+    'https://github.com',
+    'https://schema.org',
+  ]);
   for (const source of [await read('src/data/site.ts'), await read('src/data/areas.ts')]) {
     for (const product of source.match(/href: '(https:[^']+)'/g) ?? []) {
       allowed.add(new URL(product.match(/'(https:[^']+)'/)[1]).origin);
@@ -166,7 +234,10 @@ if (site) {
     }
   }
   for (const [name, content] of [['robots.txt', robots], ['sitemap.xml', sitemap]]) {
-    if (!content.includes(site)) failures.push(`${name} does not reference ${site}`);
+    if (!content.includes(expected)) failures.push(`${name} does not reference ${expected}`);
+    if (override && expected !== site && content.includes(site)) {
+      failures.push(`${name} still references the production origin ${site} despite SITE_URL`);
+    }
   }
 }
 

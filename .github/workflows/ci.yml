@@ -77,7 +77,6 @@ jobs:
         # The page states its own numbers in headings — "Six areas. One
         # company.", "eleven products". Adding a product leaves those wrong with
         # nothing to notice, which is what this catches.
-        run: pnpm assert:content
 
       - name: Build-assertion self-test
         # Corrupts the built document six ways and asserts the assertion above

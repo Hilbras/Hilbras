@@ -1,3 +1,5 @@
+import { areas, products } from './areas';
+
 /**
  * Everything else the homepage renders, kept out of components so copy changes
  * never require a markup change.
@@ -166,3 +168,59 @@ export const footerGroups: ReadonlyArray<{ title: string; links: readonly NavLin
     ],
   },
 ] as const;
+
+// --------------------------------------------------------------------------
+// Counts the page states in prose
+// --------------------------------------------------------------------------
+
+/**
+ * Numbers a visitor can read, derived from the data rather than typed into copy.
+ *
+ * The page says "Six areas. One company." in a heading and "eleven products" in
+ * the hero panel. Those were string literals in JSX, so adding a product left
+ * them wrong and nothing noticed — a content check that regexed the TSX caught it,
+ * but only until someone reformatted the file, and it could not tell the
+ * difference between a number that was wrong and a number that had moved.
+ *
+ * The numbers now live here, where the things they count also live, and the copy
+ * interpolates them. A test asserts the rendered heading matches these values,
+ * which is a statement about the page rather than about its formatting.
+ */
+export const counts = {
+  areas: areas.length,
+  products: products.length,
+  /** The products that get a wide card in the grid. */
+  featured: products.filter((product) => product.featured).length,
+  /** Of the products that are not featured, how many are already public. */
+  othersPublic: products.filter((product) => !product.featured && (product.repository || product.href)).length,
+  /** The products that are not featured, whether public or not. */
+  others: products.filter((product) => !product.featured).length,
+  /** Everything a visitor can reach a repository or a site for. */
+  public: products.filter((product) => product.repository || product.href).length,
+  principles: principles.length,
+  audiences: audiences.length,
+} as const;
+
+/**
+ * Spelled-out numerals, so a sentence can carry a count without hardcoding one.
+ *
+ * An array rather than a lookup table with a fallback, because a number outside
+ * it is a bug in the data and should read as one rather than silently degrade to
+ * a bare digit next to a spelled-out neighbour.
+ */
+const numberWords = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+] as const;
+
+/** `4` becomes `four`. Throws above twelve, which is a data problem, not a copy one. */
+export function spell(value: number): string {
+  const word = numberWords[value];
+  if (!word) throw new RangeError(`spell(${value}): no word for this number, which means the data grew`);
+  return word;
+}
+
+/** The same, capitalised for the start of a heading. */
+export function sentence(value: number): string {
+  const word = spell(value);
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}

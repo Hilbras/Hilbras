@@ -20,11 +20,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers && pnpm assert:content",
+    "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers",
     "assert:build": "node scripts/assert-build-output.mjs",
     "assert:headers": "node scripts/assert-security-headers.mjs",
     "verify:build-assertion": "node scripts/verify-build-assertion.mjs",
-    "assert:content": "node scripts/assert-content.mjs"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "check:e2e": "pnpm build && playwright test",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
@@ -33,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
