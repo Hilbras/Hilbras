@@ -1,5 +1,10 @@
 name: CI
 
+# Action majors are pinned rather than floating, and bumped deliberately: the
+# first version of this workflow used checkout@v5, setup-node@v5,
+# pnpm/action-setup@v4 and upload-artifact@v4, all of which target Node 20 and
+# now warn on every run.
+
 # One workflow, the same gates a change has to pass locally before it is worth
 # reviewing: types, lint, tests with coverage, the data validator's self-test, and
 # a full production build including the prerender.
@@ -30,13 +35,13 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 12.5.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -81,7 +86,7 @@ jobs:
         run: pnpm verify:build-assertion
 
       - name: Upload the build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -93,13 +98,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 12.5.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
