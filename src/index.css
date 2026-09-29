@@ -314,6 +314,21 @@
     color: #17150f;
   }
 
+  /* The theme icon is chosen by CSS rather than by React state, so the server
+     and the client always agree on the markup and hydration never has to
+     reconcile a browser-only value. */
+  .theme-icon-dark {
+    display: none;
+  }
+
+  [data-theme='dark'] .theme-icon-light {
+    display: none;
+  }
+
+  [data-theme='dark'] .theme-icon-dark {
+    display: block;
+  }
+
   /* --- Surfaces ----------------------------------------------- */
   .card {
     border: 1px solid var(--line);

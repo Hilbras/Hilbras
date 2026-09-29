@@ -10,56 +10,43 @@ type ProductCardProps = {
 };
 
 /**
- * One card shape for every product. The whole section is a list of these, so a
- * new product only needs a data record.
+ * Both card sizes are the same element: an `<article>` that is also the scroll
+ * reveal. Making the reveal wrapper *be* the card avoids a div that exists only
+ * to carry the animation, and keeps the heading's parent the same in every
+ * product card regardless of size.
  */
-function ProductCardBody({ product }: ProductCardProps) {
-  const area = areaById.get(product.area);
+const cardBase = 'card group relative flex h-full flex-col overflow-hidden';
+
+function ProductLinks({ product }: ProductCardProps) {
   const hasLink = Boolean(product.href || product.repository);
-
   return (
-    <article className="card group relative flex h-full flex-col overflow-hidden p-6">
-      <div className="mb-7 flex items-start justify-between gap-3">
-        <ProductMark mark={product.mark} name={product.name} />
-        <StatusPill status={product.status} />
-      </div>
-
-      <h3 className="text-lg font-semibold tracking-[-0.02em]">{product.name}</h3>
-      {area ? <p className="mono-label mt-1.5">{area.name}</p> : null}
-      <p className="muted mt-3 mb-6 text-sm leading-relaxed">{product.description}</p>
-
-      {/* The description owns the minimum gap; `mt-auto` absorbs the rest, so the
-          rule and the links sit on the same baseline in every card. */}
-      <div className="mt-auto flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 text-[12px]">
-        {product.href ? (
-          <a
-            href={product.href}
-            className="inline-flex items-center gap-1.5 font-medium text-gold-text transition-opacity hover:opacity-75"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Visit site
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="sr-only">— {product.name} (opens in a new tab)</span>
-          </a>
-        ) : null}
-        {product.repository ? (
-          <a
-            href={product.repository}
-            className="muted inline-flex items-center gap-1.5 transition-colors hover:text-gold-text"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <GitHubMark className="h-3.5 w-3.5" />
-            Source
-            <span className="sr-only">for {product.name} (opens in a new tab)</span>
-          </a>
-        ) : null}
-        {hasLink ? null : <span className="muted font-mono text-[11px]">No public release yet</span>}
-      </div>
-
-      <div className="card-glow" aria-hidden="true" />
-    </article>
+    <>
+      {product.href ? (
+        <a
+          href={product.href}
+          className="inline-flex items-center gap-1.5 font-medium text-gold-text transition-opacity hover:opacity-75"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Visit site
+          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="sr-only">— {product.name} (opens in a new tab)</span>
+        </a>
+      ) : null}
+      {product.repository ? (
+        <a
+          href={product.repository}
+          className="muted inline-flex items-center gap-1.5 transition-colors hover:text-gold-text"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          <GitHubMark className="h-3.5 w-3.5" />
+          Source
+          <span className="sr-only">for {product.name} (opens in a new tab)</span>
+        </a>
+      ) : null}
+      {hasLink ? null : <span className="muted font-mono text-[11px]">No public release yet</span>}
+    </>
   );
 }
 
@@ -68,7 +55,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
   const area = areaById.get(product.area);
 
   return (
-    <Reveal variant="card" className="card group relative flex h-full flex-col overflow-hidden p-7 sm:p-8">
+    <Reveal as="article" variant="card" className={`${cardBase} p-7 sm:p-8`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 -top-24 h-48 opacity-50 blur-3xl"
@@ -85,12 +72,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
 
       <div className="relative mt-auto flex flex-wrap items-center gap-3 border-t border-line pt-5">
         {product.repository ? (
-          <a
-            href={product.repository}
-            className="btn-ghost !text-[13px]"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
+          <a href={product.repository} className="btn-ghost !text-[13px]" target="_blank" rel="noreferrer noopener">
             <GitHubMark />
             View source
             <span className="sr-only">for {product.name} (opens in a new tab)</span>
@@ -115,11 +97,28 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
   );
 }
 
-/** The standard card, wrapped in the scroll reveal the grid staggers. */
+/** The standard card, used by the grid under the featured row. */
 function ProductCard({ product }: ProductCardProps) {
+  const area = areaById.get(product.area);
+
   return (
-    <Reveal variant="card" className="h-full">
-      <ProductCardBody product={product} />
+    <Reveal as="article" variant="card" className={`${cardBase} p-6`}>
+      <div className="mb-7 flex items-start justify-between gap-3">
+        <ProductMark mark={product.mark} name={product.name} />
+        <StatusPill status={product.status} />
+      </div>
+
+      <h3 className="text-lg font-semibold tracking-[-0.02em]">{product.name}</h3>
+      {area ? <p className="mono-label mt-1.5">{area.name}</p> : null}
+      <p className="muted mt-3 mb-6 text-sm leading-relaxed">{product.description}</p>
+
+      {/* The description owns the minimum gap; `mt-auto` absorbs the rest, so the
+          rule and the links sit on the same baseline in every card. */}
+      <div className="mt-auto flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 text-[12px]">
+        <ProductLinks product={product} />
+      </div>
+
+      <div className="card-glow" aria-hidden="true" />
     </Reveal>
   );
 }

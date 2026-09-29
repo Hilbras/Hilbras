@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  Source for `public/og.png`.
+
+  The 1200×630 social preview image is a committed artifact, because regenerating
+  it needs a headless browser and that is not worth a production dependency for
+  one PNG. This file is the editable source: change the text or the colours here,
+  render it at 1200×630, and overwrite `public/og.png`.
+
+  It deliberately reuses the site's own tokens, so a palette change shows up in
+  both places. The values below mirror `src/index.css` under `[data-theme='dark']`.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hilbras — social preview</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;600;800&family=Geist+Mono:wght@400;500&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        width: 1200px; height: 630px; overflow: hidden;
+        background: #0c0b09; color: #f2efe6;
+        font-family: 'Geist', system-ui, sans-serif;
+        position: relative;
+        display: flex; flex-direction: column; justify-content: space-between;
+        padding: 72px 80px;
+      }
+      .glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 70% 60% at 50% -20%, rgba(226,189,82,0.18), transparent 70%),
+          radial-gradient(ellipse 50% 40% at 90% 110%, rgba(226,189,82,0.10), transparent 70%);
+      }
+      .grid {
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(to right, rgba(38,33,23,0.9) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(38,33,23,0.9) 1px, transparent 1px);
+        background-size: 48px 48px;
+        -webkit-mask-image: linear-gradient(to bottom, black, transparent 80%);
+        mask-image: linear-gradient(to bottom, black, transparent 80%);
+      }
+      .content { position: relative; }
+      .brand { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+      .brand span:first-child { color: #e2bd52; font-size: 30px; line-height: 1; }
+      h1 {
+        margin-top: 56px; font-size: 92px; font-weight: 800;
+        letter-spacing: -0.055em; line-height: 0.98; max-width: 15ch;
+      }
+      h1 em {
+        font-style: normal;
+        background: linear-gradient(100deg, #e6c768, #f3d789 45%, #e6c768 90%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      p.sub { margin-top: 28px; font-size: 25px; line-height: 1.45; color: #9c9584; max-width: 30ch; }
+      .areas { position: relative; display: flex; gap: 10px; flex-wrap: wrap; }
+      .chip {
+        display: flex; align-items: center; gap: 9px;
+        border: 1px solid #353021; border-radius: 10px; padding: 10px 16px;
+        font-size: 18px; font-weight: 500; background: #15130e;
+      }
+      .chip b { color: #e2bd52; font-weight: 400; font-size: 19px; }
+      .foot {
+        position: absolute; right: 80px; bottom: 76px;
+        font-family: 'Geist Mono', monospace; font-size: 15px; color: #6f6857;
+        letter-spacing: 0.12em; text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid"></div>
+    <div class="glow"></div>
+
+    <div class="content">
+      <div class="brand"><span>◈</span><span>Hilbras</span></div>
+      <h1>Build. Connect. <em>Create.</em></h1>
+      <p class="sub">
+        A technology company building AI infrastructure, developer tools, platforms, and computing
+        environments.
+      </p>
+    </div>
+
+    <div class="areas">
+      <span class="chip"><b>◈</b> AI</span>
+      <span class="chip"><b>⬢</b> Developers</span>
+      <span class="chip"><b>▤</b> Platforms</span>
+      <span class="chip"><b>◉</b> Social</span>
+      <span class="chip"><b>▚</b> Computing</span>
+      <span class="chip"><b>◤</b> Security</span>
+    </div>
+
+    <!-- Keep in step with `site.domain` in src/data/site.ts. -->
+    <div class="foot">hilbras.vercel.app</div>
+  </body>
+</html>

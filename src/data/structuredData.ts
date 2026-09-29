@@ -1,13 +1,16 @@
-import { areas, products } from '../data/areas';
-import { site } from '../data/site';
+import { areas, products } from './areas';
+import { site } from './site';
 
 type JsonNode = Record<string, unknown>;
 
 /**
- * One organisation node plus one node per product, derived from the same data the
- * page renders. Structured data and visible copy cannot drift apart.
+ * The organisation, the website, and one node per product.
+ *
+ * Built from the same data the page renders, so the structured data and the
+ * visible copy cannot drift apart. Returns a bare array: the `@graph` wrapper
+ * and the `@context` are added by whoever serialises it.
  */
-function buildGraph(): JsonNode[] {
+export function buildGraph(): JsonNode[] {
   const organisation: JsonNode = {
     '@type': 'Organization',
     '@id': `${site.domain}/#organization`,
@@ -16,7 +19,6 @@ function buildGraph(): JsonNode[] {
     slogan: site.tagline,
     description: site.description,
     foundingDate: site.organisation.founding,
-    email: site.organisation.email,
     sameAs: [site.organisation.github],
   };
 
@@ -54,13 +56,7 @@ function buildGraph(): JsonNode[] {
   return nodes;
 }
 
-export function StructuredData() {
-  return (
-    <script
-      type="application/ld+json"
-      // The payload is built from typed, in-repo data — there is no user input
-      // in it, and JSON.stringify escapes the characters that could break out.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(buildGraph()) }}
-    />
-  );
+/** The complete document, ready to drop into a `<script type="application/ld+json">`. */
+export function buildStructuredDataDocument(): string {
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': buildGraph() });
 }

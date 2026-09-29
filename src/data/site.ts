@@ -5,7 +5,13 @@
 
 export const site = {
   name: 'Hilbras',
-  domain: 'https://hilbras.dev',
+  /**
+   * The single source of truth for every absolute URL on the site. The
+   * prerender step rewrites the canonical, Open Graph and Twitter URLs in the
+   * built HTML from this value, so moving to a different host is a one-line
+   * edit plus a rebuild.
+   */
+  domain: 'https://hilbras.vercel.app',
   tagline: 'Technology for building what comes next.',
   headline: 'Build. Connect. Create.',
   description:
@@ -13,7 +19,9 @@ export const site = {
   organisation: {
     legalName: 'Hilbras',
     founding: '2026',
-    email: 'hello@hilbras.dev',
+    // No `email` key: a placeholder address in the Organization JSON-LD would be
+    // published to every consumer of the structured data. Add it when a real
+    // contact address exists.
     github: 'https://github.com/Hilbras',
   },
 } as const;

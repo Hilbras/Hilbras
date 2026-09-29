@@ -1,6 +1,8 @@
 node_modules
 dist
 dist-ssr
+.ssr
+.vercel
 .vite
 *.local
 .DS_Store

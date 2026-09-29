@@ -9,14 +9,12 @@ import { Navbar } from '../components/Navbar';
 import { ParticleField } from '../components/ParticleField';
 import { Philosophy } from '../components/Philosophy';
 import { Products } from '../components/Products';
-import { StructuredData } from '../components/StructuredData';
 import { Technology } from '../components/Technology';
 import { Vision } from '../components/Vision';
 
 export function HomePage() {
   return (
     <>
-      <StructuredData />
       <div className="page-enter min-h-screen overflow-x-clip">
         <ParticleField />
         <Navbar />

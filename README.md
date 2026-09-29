@@ -29,10 +29,11 @@ toolchain as well as a look.
 | Types | TypeScript 5.9, `strict` + `noUnusedLocals` + `noUnusedParameters` |
 | Lint | ESLint 10 flat config, `typescript-eslint`, `react-hooks` |
 | Fonts | Geist + Geist Mono, self-hosted, `latin` and `latin-ext` subsets |
+| Rendering | Prerendered to static HTML, then hydrated |
 
 No router, no state library, no CSS-in-JS, no component framework, no animation
-library, no analytics. The whole thing is one HTML file, one stylesheet, one
-script, and four font files.
+library, no analytics. The output is one HTML file, one stylesheet, one script,
+and four font files.
 
 ## Commands
 
@@ -41,9 +42,52 @@ pnpm install
 pnpm dev          # http://localhost:5174
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint .
-pnpm build        # typecheck + production build into dist/
+pnpm build        # typecheck + client build + SSR build + prerender -> dist/
 pnpm preview      # serve dist/ locally
 ```
+
+### How the build works
+
+`pnpm build` runs three steps:
+
+1. **`build:client`** — the browser bundle and the HTML shell.
+2. **`build:server`** — `vite build --mode ssr` compiles `src/entry-server.tsx`
+   to a plain Node module. The app was already server-renderable: the only
+   browser APIs in play sit behind `useEffect`, which never runs on a server.
+3. **`prerender`** — `scripts/prerender.mjs` imports that module, renders the
+   page, writes the markup into `dist/index.html`, rewrites every absolute URL
+   from `site.domain`, and injects the JSON-LD graph. React then hydrates that
+   markup instead of discarding it.
+
+Step 3 is what makes the site readable by crawlers that do not run JavaScript —
+GPTBot, ClaudeBot, PerplexityBot, and most archiving tools. Before it, the built
+HTML held the metadata and a short `<noscript>` summary but no page content. After
+it, the full document ships as static HTML.
+
+## Deploying
+
+`vercel.json` pins the framework, build command, output directory, and cache
+headers, so a Vercel project needs no further configuration.
+
+```bash
+vercel link
+vercel --prod
+```
+
+Or connect the repository in the Vercel dashboard. **The repository is currently
+private**, so a Vercel Git integration would need the project added to that
+account explicitly, or the repository made public.
+
+Two things to change before a real launch:
+
+- **The domain.** `hilbras.vercel.app` is set in one place — `site.domain` in
+  `src/data/site.ts` — and the prerender step rewrites the canonical, Open Graph,
+  and Twitter URLs from it. `public/robots.txt` and `public/sitemap.xml` are
+  static and need editing by hand, as does the footer text inside
+  `scripts/og-template.html` if you regenerate the social image.
+- **The social image.** `public/og.png` is a committed artifact.
+  `scripts/og-template.html` is its editable source; render it at 1200×630 to
+  regenerate.
 
 ## Structure
 
@@ -153,9 +197,13 @@ and SEO. The specific claims behind that:
   scrolling is off, and all 61 reveals render at full opacity. The hidden state
   itself lives inside a `prefers-reduced-motion: no-preference` block, so it is
   not merely animated away — it is never applied.
-- With JavaScript disabled the page still renders: the reveal hidden state is
-  gated on `html.has-js`, and a `<noscript>` block states what Hilbras is and
-  links to the organisation on GitHub.
+- With JavaScript disabled the page still renders. The reveal hidden state is
+  gated on `html.has-js`, and the prerendered markup means the full document is
+  present — not just the `<noscript>` summary.
+- Hydration is clean: no warnings, no errors, and React reuses the server DOM
+  rather than replacing it. The theme toggle's icon is selected by CSS from
+  `data-theme` rather than from React state, specifically so the server and
+  client trees cannot disagree about a `localStorage` value.
 - Product marks are inline SVG with `aria-hidden="true"`; each product is named
   once, in its chip, via `.sr-only`. No product mark depends on a system font.
 - Measured contrast against composited backgrounds, both themes, all 13 pairs at
@@ -173,7 +221,7 @@ product, built from the same data the cards render from. `public/robots.txt` and
 ## Performance
 
 ```text
-HTML             4.8 kB
+HTML           108.5 kB    (96.9 kB of it prerendered markup)
 CSS             39.8 kB    (8.5 kB gzipped)
 JS             278.9 kB    (85.5 kB gzipped)
 Fonts            83.7 kB    (4 files, latin subsets preloaded)
@@ -182,7 +230,7 @@ Third parties     0
 Requests          6
 ```
 
-Two decisions did most of that work:
+Three decisions did most of that work:
 
 - **The animation library is gone.** Scroll reveals are a CSS transition toggled
   by one `IntersectionObserver`, and the two navbar disclosures keep themselves
@@ -194,6 +242,8 @@ Two decisions did most of that work:
   `public/fonts` with the two latin subsets preloaded. This removes a
   render-blocking third-party stylesheet from the critical path and keeps
   visitor IPs off a third party. The page now makes zero cross-origin requests.
+- **The page ships as static HTML.** The document is prerendered, so first paint
+  does not wait on the bundle.
 
 The drifting particle field pauses when the tab is hidden, and scroll reveals run
 once and never replay.
