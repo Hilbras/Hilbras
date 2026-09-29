@@ -34,12 +34,14 @@ export function ParticleField() {
     let frame = 0;
     let width = 0;
     let height = 0;
-    let gold = '#e2bd52';
+    // Resolved from the `--gold` token before the first paint. A hardcoded
+    // fallback would drift the moment the accent changed, and a canvas has to be
+    // given a concrete colour, so the token is read rather than referenced.
+    let accent = '';
     let particles: Particle[] = [];
 
     const readAccent = () => {
-      const value = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim();
-      if (value) gold = value;
+      accent = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim();
     };
 
     const resize = () => {
@@ -63,7 +65,7 @@ export function ParticleField() {
     const draw = () => {
       context.clearRect(0, 0, width, height);
       context.lineWidth = 1;
-      context.strokeStyle = gold;
+      context.strokeStyle = accent;
 
       for (let i = 0; i < particles.length; i += 1) {
         for (let j = i + 1; j < particles.length; j += 1) {
@@ -80,7 +82,7 @@ export function ParticleField() {
         }
       }
 
-      context.fillStyle = gold;
+      context.fillStyle = accent;
       context.globalAlpha = 0.62;
       for (const particle of particles) {
         context.beginPath();

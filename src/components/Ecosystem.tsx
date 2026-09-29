@@ -1,5 +1,6 @@
 import { areas, productsInArea } from '../data/areas';
 import { Mark } from './ui/Mark';
+import { ProductLink } from './ui/ProductLink';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
 
@@ -30,16 +31,13 @@ export function Ecosystem() {
               <ul className="mt-auto flex flex-wrap gap-2 border-t border-line pt-4">
                 {owned.map((product) => (
                   <li key={`${area.id}-${product.id}`}>
-                    <a
-                      href={product.href ?? '#products'}
+                    <ProductLink
+                      product={product}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-2.5 py-1.5 text-[12px] text-muted transition-colors hover:border-gold/50 hover:bg-gold-soft hover:text-gold-text"
-                      target={product.href ? '_blank' : undefined}
-                      rel={product.href ? 'noreferrer noopener' : undefined}
                     >
                       <Mark id={product.mark} className="h-3.5 w-3.5 shrink-0 text-gold" />
                       {product.name}
-                      {product.href ? <span className="sr-only"> (opens in a new tab)</span> : null}
-                    </a>
+                    </ProductLink>
                   </li>
                 ))}
               </ul>

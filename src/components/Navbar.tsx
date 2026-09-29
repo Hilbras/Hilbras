@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef } from 'react';
 import { ArrowUpRight, ChevronDown, Menu, X } from 'lucide-react';
-import { areas, productsInArea, statusLabels } from '../data/areas';
+import { areas, productsInArea } from '../data/areas';
 import { navLinks, site } from '../data/site';
 import { HilbrasMark, Mark } from './ui/Mark';
+import { ProductLink } from './ui/ProductLink';
 import { useDisclosure } from './ui/Reveal';
+import { StatusPill } from './ui/StatusPill';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar() {
@@ -111,17 +113,15 @@ export function Navbar() {
                         <ul className="mt-1.5 space-y-0.5">
                           {productsInArea(area.id).map((product) => (
                             <li key={`${area.id}-${product.id}`}>
-                              <a
-                                href={product.href ?? '#products'}
+                              <ProductLink
+                                product={product}
                                 className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[13px] text-muted transition-colors hover:bg-gold-soft hover:text-gold-text"
                                 onClick={dropdown.close}
                               >
                                 <Mark id={product.mark} className="h-3.5 w-3.5 shrink-0 text-gold" />
                                 <span className="truncate">{product.name}</span>
-                                <span className="ml-auto shrink-0 font-mono text-[9px] tracking-[0.08em] uppercase opacity-70">
-                                  {statusLabels[product.status]}
-                                </span>
-                              </a>
+                                <StatusPill status={product.status} compact />
+                              </ProductLink>
                             </li>
                           ))}
                         </ul>
@@ -194,15 +194,14 @@ export function Navbar() {
                 <ul className="mt-1 space-y-0.5">
                   {productsInArea(area.id).map((product) => (
                     <li key={`${area.id}-${product.id}`}>
-                      <a
-                        href={product.href ?? '#products'}
+                      <ProductLink
+                        product={product}
                         onClick={mobile.close}
                         className="flex items-center gap-2 rounded-md py-1.5 text-[13px] text-muted"
                       >
                         <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />
                         {product.name}
-                        {product.href ? <span className="sr-only"> (opens in a new tab)</span> : null}
-                      </a>
+                      </ProductLink>
                     </li>
                   ))}
                 </ul>

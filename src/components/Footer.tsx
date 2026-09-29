@@ -1,10 +1,8 @@
 import { areaById, products } from '../data/areas';
+import { externalRel, isExternalHref } from '../data/links';
 import { footerGroups, site } from '../data/site';
 import { HilbrasMark } from './ui/Mark';
-
-function isExternal(href: string) {
-  return href.startsWith('http');
-}
+import { ProductLink } from './ui/ProductLink';
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -30,18 +28,11 @@ export function Footer() {
           <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
             {products.map((product) => {
               const area = areaById.get(product.area);
-              const external = isExternal(product.href ?? '');
               return (
                 <li key={product.id} className="min-w-0">
-                  <a
-                    href={product.href ?? '#products'}
-                    className="footer-link block truncate"
-                    target={external ? '_blank' : undefined}
-                    rel={external ? 'noreferrer noopener' : undefined}
-                  >
+                  <ProductLink product={product} className="footer-link block truncate">
                     {product.name}
-                    {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
-                  </a>
+                  </ProductLink>
                   {area ? <span className="muted block truncate text-[11px]">{area.short}</span> : null}
                 </li>
               );
@@ -56,15 +47,10 @@ export function Footer() {
             </h2>
             <ul className="mt-4 space-y-2.5 text-sm">
               {group.links.map((link) => {
-                const external = isExternal(link.href);
+                const external = isExternalHref(link.href);
                 return (
                   <li key={link.href}>
-                    <a
-                      href={link.href}
-                      className="footer-link"
-                      target={external ? '_blank' : undefined}
-                      rel={external ? 'noreferrer noopener' : undefined}
-                    >
+                    <a href={link.href} className="footer-link" rel={externalRel(link.href)} target={external ? '_blank' : undefined}>
                       {link.label}
                       {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
                     </a>

@@ -1,7 +1,8 @@
-import { ArrowRight, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { areas } from '../data/areas';
 import { heroAssurances, site } from '../data/site';
 import { GitHubMark } from './ui/GitHubMark';
+import { AssuranceRow } from './ui/AssuranceRow';
 import { HilbrasMark, Mark } from './ui/Mark';
 
 export function Hero() {
@@ -40,14 +41,7 @@ export function Hero() {
             </a>
           </div>
 
-          <p className="muted hero-in hero-in-5 mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[10px] tracking-[0.12em] uppercase">
-            {heroAssurances.map((assurance) => (
-              <span key={assurance} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3 w-3 text-gold" aria-hidden="true" />
-                {assurance}
-              </span>
-            ))}
-          </p>
+          <AssuranceRow labels={heroAssurances} className="hero-in hero-in-5 mt-7" />
         </div>
 
         <div className="hero-in hero-in-panel mx-auto mt-14 max-w-4xl sm:mt-20">

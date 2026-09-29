@@ -1,5 +1,6 @@
 import { areas, productById } from '../data/areas';
 import { Mark } from './ui/Mark';
+import { ProductLink } from './ui/ProductLink';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
 
@@ -51,22 +52,15 @@ function StageNodes({ stage }: { stage: Stage }) {
         const product = productById.get(id);
         if (!product) return null;
         const area = areas.find((entry) => entry.id === product.area);
-        const external = Boolean(product.href);
         return (
           <li key={`${stage.id}-${id}`}>
-            <a
-              href={product.href ?? '#products'}
-              className="node flex h-full flex-col gap-1.5 px-3 py-3"
-              target={external ? '_blank' : undefined}
-              rel={external ? 'noreferrer noopener' : undefined}
-            >
+            <ProductLink product={product} className="node flex h-full flex-col gap-1.5 px-3 py-3">
               <span className="flex items-center gap-2">
                 <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />
                 <span className="truncate text-[13px] font-medium">{product.name}</span>
               </span>
               <span className="muted truncate text-[10px]">{area ? area.short : 'Hilbras'}</span>
-              {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
-            </a>
+            </ProductLink>
           </li>
         );
       })}

@@ -1,5 +1,6 @@
 import { ArrowRight, Lock, Sparkles } from 'lucide-react';
 import { site } from '../data/site';
+import { IconAssuranceRow } from './ui/AssuranceRow';
 import { GitHubMark } from './ui/GitHubMark';
 import { Reveal } from './ui/Reveal';
 import { Section } from './ui/Section';
@@ -42,14 +43,7 @@ export function FinalCta() {
             </a>
           </div>
 
-          <div className="muted mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[10px] tracking-[0.12em] uppercase">
-            {assurances.map(({ icon: Icon, label }) => (
-              <span key={label} className="flex items-center gap-1.5">
-                <Icon className="h-3 w-3 text-gold" aria-hidden="true" />
-                {label}
-              </span>
-            ))}
-          </div>
+          <IconAssuranceRow items={assurances} className="mt-7" />
         </div>
       </Reveal>
     </Section>
