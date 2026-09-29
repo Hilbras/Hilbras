@@ -5,7 +5,7 @@ import { Section, SectionHeader } from './ui/Section';
 const points = [
   {
     icon: Box,
-    title: 'Build powerful products independently.',
+    title: 'Every product stands on its own.',
     body: 'Each project is designed to be worth installing on its own, with a clear job and a maintainable surface.',
   },
   {

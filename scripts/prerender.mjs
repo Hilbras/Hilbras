@@ -25,6 +25,28 @@ const origin = site.domain.replace(/\/+$/, '');
 const markup = render();
 let html = await readFile(distIndex, 'utf8');
 
+/**
+ * Every absolute URL and every text field in <head> comes from `src/data/site.ts`.
+ *
+ * They used to be typed into index.html, which meant the same company was
+ * described three different ways in three different tags: a meta description
+ * saying "software infrastructure, AI systems, digital platforms", an
+ * Open Graph description saying "AI infrastructure, application platforms", and
+ * a JSON-LD Organization saying a third thing. Search engines and social
+ * platforms compare these, and they were not the same sentence. Generating them
+ * makes the disagreement impossible rather than merely fixed.
+ */
+const documentTitle = `${site.name} \u2014 ${site.headline}`;
+
+/** Escapes a value for use inside a double-quoted HTML attribute. */
+const attr = (value) =>
+  String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Replaces the text content of the first attribute in a matched tag. */
+const setText = (pattern, value) => {
+  html = html.replace(pattern, (_match, before) => `${before}${attr(value)}"`);
+};
+
 // 1. The rendered app replaces the empty mount point.
 if (!html.includes('<div id="root"></div>')) {
   throw new Error('prerender: expected an empty <div id="root"></div> in dist/index.html');
@@ -39,6 +61,16 @@ html = html.replace('<div id="root"></div>', `<div id="root">${markup}</div>`);
 const setUrl = (pattern, path) => {
   html = html.replace(pattern, (_match, before, after) => `${before}${origin}${path}${after}`);
 };
+
+setText(/(<meta[^>]*name="description"[^>]*content=")[^"]*(")/gi, site.description);
+setText(/(<meta[^>]*property="og:description"[^>]*content=")[^"]*(")/gi, site.description);
+setText(/(<meta[^>]*name="twitter:description"[^>]*content=")[^"]*(")/gi, site.description);
+setText(/(<meta[^>]*property="og:site_name"[^>]*content=")[^"]*(")/gi, site.name);
+setText(/(<meta[^>]*property="og:title"[^>]*content=")[^"]*(")/gi, documentTitle);
+setText(/(<meta[^>]*name="twitter:title"[^>]*content=")[^"]*(")/gi, documentTitle);
+setText(/(<meta[^>]*property="og:image:alt"[^>]*content=")[^"]*(")/gi, site.imageAlt);
+setText(/(<meta[^>]*name="twitter:image:alt"[^>]*content=")[^"]*(")/gi, site.imageAlt);
+html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${attr(documentTitle)}</title>`);
 
 setUrl(/(<link[^>]*rel="canonical"[^>]*href=")[^"]*(")/gi, '/');
 setUrl(/(<meta[^>]*property="og:url"[^>]*content=")[^"]*(")/gi, '/');

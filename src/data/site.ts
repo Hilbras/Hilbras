@@ -17,6 +17,12 @@ export const site = {
   description:
     'Hilbras is an independent technology company building AI infrastructure, developer tools, application platforms, computing environments, and security tooling.',
   /**
+   * The alt text for the social preview image. In the data rather than in
+   * index.html for the same reason as the domain: the head is rewritten from
+   * this file at build time, so there is one place to edit.
+   */
+  imageAlt: 'Hilbras — a technology ecosystem of independent products.',
+  /**
    * Bumped when the public content changes. Feeds the sitemap's `lastmod`,
    * which is why it is a single value rather than a per-route one while there
    * is only a single route.

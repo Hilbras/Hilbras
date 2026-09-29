@@ -68,6 +68,12 @@ jobs:
         # document to every crawler that does not run JavaScript.
         run: pnpm assert:build
 
+      - name: Content consistency
+        # The page states its own numbers in headings — "Six areas. One
+        # company.", "eleven products". Adding a product leaves those wrong with
+        # nothing to notice, which is what this catches.
+        run: pnpm assert:content
+
       - name: Build-assertion self-test
         # Corrupts the built document six ways and asserts the assertion above
         # rejects each, then restores it. A guard never seen to fire is not a

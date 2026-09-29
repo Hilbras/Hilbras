@@ -27,6 +27,7 @@ const exists = async (file) => {
 };
 
 const html = await read('dist/index.html');
+const siteSource = await read('src/data/site.ts');
 // Vite reformats the built HTML across lines, so tag matching runs on a flattened
 // copy. Content assertions run on the original.
 const flat = html.replace(/\s+/g, ' ');
@@ -48,6 +49,32 @@ check(flat.includes('property="og:image"'), 'no Open Graph image');
 check(flat.includes('property="og:description"'), 'no Open Graph description');
 check(flat.includes('name="twitter:card"'), 'no Twitter card type');
 check(flat.includes('rel="manifest"'), 'no web manifest link');
+
+// Every description the document publishes must be the same sentence. They were
+// three different ones — the meta tag, the Open Graph tag and the JSON-LD
+// Organization all described the company differently, which is exactly what a
+// search engine or a link preview compares.
+const descriptions = [
+  ['meta description', flat.match(/<meta name="description"[^>]*content="([^"]*)"/)?.[1]],
+  ['og:description', flat.match(/<meta property="og:description"[^>]*content="([^"]*)"/)?.[1]],
+  ['twitter:description', flat.match(/<meta name="twitter:description"[^>]*content="([^"]*)"/)?.[1]],
+];
+for (const [label, value] of descriptions) {
+  check(Boolean(value), `no ${label}`);
+}
+const distinct = new Set(descriptions.map(([, value]) => value));
+check(
+  distinct.size === 1,
+  `the published descriptions disagree: ${[...distinct].map((d) => `"${d?.slice(0, 40)}..."`).join(' vs ')}`,
+);
+
+// And they must match the one in the data, which is also what the structured
+// data and the web manifest publish.
+const dataDescription = siteSource.match(/description:\s*\n?\s*'([^']+)'/)?.[1];
+check(
+  descriptions[0][1] === dataDescription,
+  `the meta description is not site.description; update index.html's development-time copy`,
+);
 check(flat.includes('src="/theme-init.js"'), 'the theme bootstrap script is not referenced');
 check(!/<script>(?![\s\S]{0,4}type=)/.test(flat.replace(/<script type="application\/ld\+json">/g, '')), 'an inline script was reintroduced, which the CSP would block');
 
@@ -114,7 +141,6 @@ check(sitemap.includes('<urlset'), 'sitemap.xml is not a urlset');
 check(sitemap.includes('<loc>'), 'sitemap.xml has no locations');
 
 // --- The canonical domain, used consistently and named nowhere else ---------
-const siteSource = await read('src/data/site.ts');
 const site = siteSource.match(/domain: '([^']+)'/)?.[1];
 check(Boolean(site), 'could not read site.domain from src/data/site.ts');
 
