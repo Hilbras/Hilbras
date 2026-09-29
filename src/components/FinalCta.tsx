@@ -15,11 +15,7 @@ export function FinalCta() {
   return (
     <Section id="start">
       <Reveal variant="card" className="card relative overflow-hidden px-6 py-12 text-center sm:px-10 sm:py-16">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-32 h-64 opacity-60 blur-3xl"
-          style={{ background: 'radial-gradient(ellipse, var(--glow), transparent 70%)' }}
-        />
+        <div aria-hidden="true" className="glow-wash pointer-events-none absolute inset-x-0 -top-32 h-64 opacity-60 blur-3xl" />
 
         <div className="relative">
           <span className="eyebrow">Start anywhere</span>

@@ -56,11 +56,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
 
   return (
     <Reveal as="article" variant="card" className={`${cardBase} p-7 sm:p-8`}>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 -top-24 h-48 opacity-50 blur-3xl"
-        style={{ background: 'radial-gradient(ellipse, var(--glow), transparent 70%)' }}
-      />
+      <div aria-hidden="true" className="glow-wash pointer-events-none absolute inset-x-0 -top-24 h-48 opacity-50 blur-3xl" />
       <div className="relative mb-8 flex items-start justify-between gap-3">
         <ProductMark mark={product.mark} name={product.name} className="h-12 w-12" glyph="h-6 w-6" />
         <StatusPill status={product.status} />

@@ -60,31 +60,14 @@
     />
 
 
-    <script>
-      (function () {
-        // The scroll-reveal hidden state is gated on this class. Setting it here,
-        // before first paint, means nothing flashes in at full opacity first —
-        // and a visitor without JavaScript simply never gets the hidden state.
-        document.documentElement.classList.add('has-js');
-        try {
-          var stored = localStorage.getItem('hilbras-theme');
-          var theme =
-            stored === 'light' || stored === 'dark'
-              ? stored
-              : window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
-          document.documentElement.dataset.theme = theme;
-        } catch (error) {
-          document.documentElement.dataset.theme = 'dark';
-        }
-      })();
-    </script>
+    <!-- Applies the stored theme before first paint. External rather than inline
+         so the Content Security Policy needs no nonce or hash. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <noscript>
-      <div style="max-width: 40rem; margin: 0 auto; padding: 3rem 1.25rem; font-family: system-ui, sans-serif">
+      <div class="noscript-fallback">
         <h1>Hilbras — Build. Connect. Create.</h1>
         <p>
           Hilbras is an independent technology company building software infrastructure, developer tools, AI

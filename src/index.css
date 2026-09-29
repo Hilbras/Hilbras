@@ -361,7 +361,6 @@
     pointer-events: none;
     transition: opacity 300ms ease;
   }
-
   .group:hover .card-glow,
   .group:focus-within .card-glow {
     opacity: 1;
@@ -436,6 +435,16 @@
     background: radial-gradient(ellipse 90% 60% at 50% -15%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%);
   }
 
+  /**
+   * The soft gold wash that sits behind a featured card and the closing call to
+   * action. It was an inline `style` attribute, which a strict
+   * `style-src 'self'` policy blocks; as a class it is also one definition
+   * instead of two copies of the same gradient.
+   */
+  .glow-wash {
+    background: radial-gradient(ellipse, var(--glow), transparent 70%);
+  }
+
   .grid-wash {
     background-image: linear-gradient(to right, color-mix(in srgb, var(--line) 50%, transparent) 1px, transparent 1px),
       linear-gradient(to bottom, color-mix(in srgb, var(--line) 50%, transparent) 1px, transparent 1px);
@@ -451,6 +460,38 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+  }
+
+  /**
+   * The no-JavaScript fallback, rendered inside <noscript>.
+   *
+   * Styled here rather than with an inline `style` attribute so the Content
+   * Security Policy can be `style-src 'self'` with no exceptions. It only ever
+   * renders when scripting is off, which is exactly when the policy is not
+   * being enforced in a meaningful way anyway.
+   */
+  .noscript-fallback {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 3rem 1.25rem;
+    font-family: system-ui, sans-serif;
+  }
+
+  .noscript-fallback h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .noscript-fallback p {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .noscript-fallback a {
+    color: var(--gold-text);
   }
 
   /* --- Navigation --------------------------------------------- */
