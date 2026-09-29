@@ -49,18 +49,38 @@ describe('ProductCard', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer noopener');
   });
 
-  it('offers both links for a product with a site and a repository', () => {
+  it('offers every link a product with a site and a repository deserves', () => {
     render(<FeaturedProductCard product={studio} />);
     const article = screen.getByRole('article');
     expect(within(article).getByRole('link', { name: /View source/ })).toHaveAttribute('href', studio.repository);
     expect(within(article).getByRole('link', { name: /Visit site/ })).toHaveAttribute('href', studio.href);
+    expect(within(article).getByRole('link', { name: 'Hilbras Studio' })).toHaveAttribute(
+      'href',
+      '/products/studio',
+    );
   });
 
-  it('says so plainly when a product has no public release, and links nowhere false', () => {
+  it('says so plainly when a product has no public release, and links nothing false', () => {
     render(<ProductCard product={gateway} />);
     const article = screen.getByRole('article');
+    // It still links: the product's page is where the site explains what it is
+    // and why there is nothing to install yet. What it must not do is invent a
+    // repository or a site.
     expect(within(article).getByText('No public release yet')).toBeInTheDocument();
-    expect(within(article).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(article).queryByRole('link', { name: /Source/ })).not.toBeInTheDocument();
+    expect(within(article).queryByRole('link', { name: /Visit site/ })).not.toBeInTheDocument();
+  });
+
+  it('links the name to the product page, not out to a repository', () => {
+    render(<ProductCard product={sdk} />);
+    const article = screen.getByRole('article');
+    // The card is not itself a link, because it contains other links and
+    // nesting anchors is invalid. The heading carries it instead.
+    expect(within(article).getByRole('link', { name: 'Hilbras SDK' })).toHaveAttribute(
+      'href',
+      '/products/sdk',
+    );
+    expect(article.querySelector('a[href^="https"]')).not.toBeNull();
   });
 
   it('renders the featured and standard cards as the same element', () => {

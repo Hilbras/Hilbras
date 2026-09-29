@@ -1,5 +1,6 @@
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { areaById, type Product } from '../data/areas';
+import { productHref } from '../data/links';
 import { GitHubMark } from './ui/GitHubMark';
 import { ProductMark } from './ui/ProductMark';
 import { Reveal } from './ui/Reveal';
@@ -17,14 +18,39 @@ type ProductCardProps = {
  */
 const cardBase = 'card group relative flex h-full flex-col overflow-hidden';
 
+/**
+ * The name links to the product's own page.
+ *
+ * The card is not itself a link, because it contains the repository and site
+ * links and nesting anchors is invalid. Putting the link on the heading keeps
+ * the whole name clickable, which is the convention, and leaves the card's
+ * affordances in the row below.
+ *
+ * Every product has a page now, including the three with nothing publicly
+ * released. Those still link, because the page is where the site explains what
+ * the product is and why there is nothing to install yet — which is more useful
+ * than a card that dead-ends.
+ */
+function ProductName({ product, className }: ProductCardProps & { className: string }) {
+  return (
+    <h3 className={className}>
+      <a href={productHref(product)} className="after:absolute after:inset-0 after:content-['']">
+        {product.name}
+      </a>
+    </h3>
+  );
+}
+
 function ProductLinks({ product }: ProductCardProps) {
-  const hasLink = Boolean(product.href || product.repository);
+  const isPublic = Boolean(product.href || product.repository);
+
   return (
     <>
+      {/* Above the stretched heading's overlay, so these stay clickable. */}
       {product.href ? (
         <a
           href={product.href}
-          className="inline-flex items-center gap-1.5 font-medium text-gold-text transition-opacity hover:opacity-75"
+          className="relative z-10 inline-flex items-center gap-1.5 font-medium text-gold-text transition-opacity hover:opacity-75"
           target="_blank"
           rel="noreferrer noopener"
         >
@@ -36,7 +62,7 @@ function ProductLinks({ product }: ProductCardProps) {
       {product.repository ? (
         <a
           href={product.repository}
-          className="muted inline-flex items-center gap-1.5 transition-colors hover:text-gold-text"
+          className="relative z-10 muted inline-flex items-center gap-1.5 transition-colors hover:text-gold-text"
           target="_blank"
           rel="noreferrer noopener"
         >
@@ -45,7 +71,9 @@ function ProductLinks({ product }: ProductCardProps) {
           <span className="sr-only">for {product.name} (opens in a new tab)</span>
         </a>
       ) : null}
-      {hasLink ? null : <span className="muted font-mono text-[11px]">No public release yet</span>}
+      {isPublic ? null : (
+        <span className="muted font-mono text-[11px]">No public release yet</span>
+      )}
     </>
   );
 }
@@ -62,13 +90,30 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
         <StatusPill status={product.status} />
       </div>
 
-      <h3 className="relative text-2xl font-semibold tracking-[-0.03em]">{product.name}</h3>
+      <ProductName
+        product={product}
+        className="relative text-2xl font-semibold tracking-[-0.03em] after:absolute"
+      />
       {area ? <p className="mono-label relative mt-2">{area.name}</p> : null}
-      <p className="muted relative mt-4 mb-7 max-w-lg text-sm leading-relaxed sm:text-base">{product.description}</p>
+      <p className="muted relative mt-4 mb-7 max-w-lg text-sm leading-relaxed sm:text-base">
+        {product.description}
+      </p>
 
       <div className="relative mt-auto flex flex-wrap items-center gap-3 border-t border-line pt-5">
+        <a
+          href={productHref(product)}
+          className="btn-ghost !text-[13px] transition-colors group-hover:border-gold/40"
+        >
+          Details
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </a>
         {product.repository ? (
-          <a href={product.repository} className="btn-ghost !text-[13px]" target="_blank" rel="noreferrer noopener">
+          <a
+            href={product.repository}
+            className="btn-quiet !text-[13px]"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
             <GitHubMark />
             View source
             <span className="sr-only">for {product.name} (opens in a new tab)</span>
@@ -77,7 +122,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
         {product.href ? (
           <a
             href={product.href}
-            className="btn-quiet text-gold-text"
+            className="btn-quiet text-gold-text !text-[13px]"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -104,7 +149,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <StatusPill status={product.status} />
       </div>
 
-      <h3 className="text-lg font-semibold tracking-[-0.02em]">{product.name}</h3>
+      <ProductName product={product} className="relative text-lg font-semibold tracking-[-0.02em]" />
       {area ? <p className="mono-label mt-1.5">{area.name}</p> : null}
       <p className="muted mt-3 mb-6 text-sm leading-relaxed">{product.description}</p>
 
@@ -123,7 +168,13 @@ export function ProductCard({ product }: ProductCardProps) {
  * `columns` is passed in rather than hard-coded so the caller can balance the
  * last row: seven products read better in four columns than in three.
  */
-export function ProductGrid({ items, columns = 3 }: { items: readonly Product[]; columns?: 2 | 3 | 4 }) {
+export function ProductGrid({
+  items,
+  columns = 3,
+}: {
+  items: readonly Product[];
+  columns?: 2 | 3 | 4;
+}) {
   const wide = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-2 lg:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4' }[
     columns
   ];

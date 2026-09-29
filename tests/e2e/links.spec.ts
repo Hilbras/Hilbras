@@ -68,14 +68,25 @@ test.describe('links', () => {
     }
   });
 
-  test('does not link a product that has no public release', async ({ page }) => {
+  test('says a product with no public release has none, and links nothing false', async ({ page }) => {
     await page.locator('#products').scrollIntoViewIfNeeded();
 
     // Three products are marked in development with neither a site nor a
-    // repository. Their cards must say so rather than linking nowhere.
-    for (const name of ['Hilbras Gateway', 'Hilbras OS', 'HilGit']) {
+    // repository. Their cards say so rather than inventing a destination — and
+    // they still link to the product's own page, which is where the site explains
+    // what the product is and why there is nothing to install yet.
+    for (const [name, slug] of [
+      ['Hilbras Gateway', 'gateway'],
+      ['Hilbras OS', 'os'],
+      ['HilGit', 'hilgit'],
+    ]) {
       const card = page.locator('article', { has: page.getByRole('heading', { name, exact: true }) }).first();
       await expect(card).toContainText(/No public release yet/);
+      await expect(card.getByRole('link', { name: name, exact: true })).toHaveAttribute(
+        'href',
+        `/products/${slug}`,
+      );
+      await expect(card.locator('a[href^="https"]')).toHaveCount(0);
     }
   });
 

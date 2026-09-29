@@ -1,16 +1,28 @@
 import type { Product } from './areas';
+import { productPath } from '../routes';
 
 /**
- * Where a product link goes when the product has no public site yet.
- *
- * One constant, because the same fallback appeared in six components and any
- * change to it had to be made six times.
+ * Where the products list lives on the homepage, for links that are about
+ * products in general rather than one of them.
  */
 export const PRODUCTS_ANCHOR = '#products';
 
-/** The href for a product, whether or not it has a site of its own. */
-export function productHref(product: Pick<Product, 'href'>): string {
-  return product.href ?? PRODUCTS_ANCHOR;
+/**
+ * The href for a product.
+ *
+ * Every product has a page now, so this is always the product's own address. It
+ * used to fall back to the homepage's products section for a product with no
+ * site of its own, and to the product's own site for the rest — which meant
+ * three products had nowhere to link and eight linked straight out to GitHub. So
+ * eight of eleven products had no presence in search results at all, and the
+ * ones that did were described by whatever the repository's README happened to
+ * say rather than by the registry.
+ *
+ * The product page is where the registry meets the outside world. It carries the
+ * repository and site links, and it can be indexed and linked to.
+ */
+export function productHref(product: Pick<Product, 'id'>): string {
+  return productPath(product.id);
 }
 
 /**

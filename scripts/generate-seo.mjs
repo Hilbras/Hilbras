@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ssrEntry = join(root, '.ssr', 'entry-server.mjs');
 
-const { site, resolveSiteUrl } = await import(ssrEntry);
+const { site, counts, resolveSiteUrl, allRoutes } = await import(ssrEntry);
 const origin = resolveSiteUrl();
 
 const robots = `User-agent: *
@@ -26,10 +26,23 @@ Sitemap: ${origin}/sitemap.xml
 `;
 
 /**
- * One URL today. When product pages exist they belong here, generated from the
- * product data rather than hand-maintained.
+ * Every route, generated from the route table rather than listed by hand.
+ *
+ * A hand-maintained list is how a page ends up missing from the sitemap, which
+ * is invisible until a search engine does not find it. This reads the same
+ * `allRoutes()` the prerender uses, so a product added to `areas.ts` is in the
+ * sitemap, has a page, and has JSON-LD, with no second edit anywhere.
  */
-const routes = [{ path: '/', priority: '1.0', changefreq: 'weekly' }];
+const routes = allRoutes().map((route) => {
+  const isProduct = route.kind === 'product';
+  return {
+    path: route.kind === 'home' ? '/' : route.path,
+    // The homepage is the company's front door; the index and the product
+    // pages are the catalogue underneath it.
+    priority: route.kind === 'home' ? '1.0' : isProduct ? '0.8' : '0.9',
+    changefreq: isProduct ? 'monthly' : 'weekly',
+  };
+});
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

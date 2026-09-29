@@ -241,6 +241,130 @@ if (site) {
   }
 }
 
+// --- Every route ------------------------------------------------------------
+const productIdsForRoutes = [...(await read('src/data/areas.ts')).matchAll(/^    id: '([a-z0-9-]+)',$/gm)]
+  // The areas array is the same shape as the products array, so only the block
+  // after `export const products` holds product ids.
+  .map((m) => m[1]);
+
+// The homepage's section ids, needed to resolve the `/#section` links that
+// appear on every other route.
+const homeSectionIds = new Set(
+  [...html.matchAll(/<(?:section|main)[^>]*id="([^"]+)"/g)].map((m) => m[1]),
+);
+
+const blocks = (await read('src/data/areas.ts')).split('export const products')[1] ?? '';
+const productIds = [...blocks.matchAll(/^    id: '([a-z0-9-]+)',$/gm)].map((m) => m[1]);
+const routes = ['/', '/products', ...productIds.map((id) => `/products/${id}`)];
+
+for (const route of routes) {
+  const file = route === '/' ? join(dist, 'index.html') : join(dist, route, 'index.html');
+  let document;
+  try {
+    document = await readFile(file, 'utf8');
+  } catch {
+    failures.push(`the prerender produced no document for ${route} — expected ${file}`);
+    continue;
+  }
+
+  const documentFlat = document.replace(/\s+/g, ' ');
+  const label = `${route}`.padEnd(20);
+
+  // Injected, not an empty mount point. This is the failure a prerender can have
+  // silently, per route rather than across the site.
+  if (!/<div id="root"><div/.test(document)) {
+    failures.push(`${route}: the prerender injected no markup`);
+    continue;
+  }
+
+  const text = (document.split('<div id="root">')[1] ?? '')
+    .replace(/<script[\s\S]*?<\/script>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length < 500) failures.push(`${route}: only ${text.length} characters of prerendered text`);
+
+  // Indexable: one title, one description, a canonical naming its own address.
+  const title = documentFlat.match(/<title>([^<]+)<\/title>/)?.[1];
+  if (!title) failures.push(`${route}: no title`);
+  else if (route !== '/' && !/\w/.test(title)) failures.push(`${route}: empty title`);
+
+  const description = documentFlat.match(/<meta name="description"[^>]*content="([^"]*)"/)?.[1];
+  if (!description) failures.push(`${route}: no meta description`);
+
+  const canonical = documentFlat.match(/rel="canonical" href="([^"]+)"/)?.[1];
+  const wanted = `${site}/${route.replace(/^\//, '')}`;
+  if (canonical !== wanted) {
+    failures.push(`${route}: canonical is ${canonical}, expected ${wanted}`);
+  }
+
+  // The route's own address, not the homepage's. A product page serving the
+  // homepage's canonical tells a search engine the two are the same document.
+  const routeIds = [...document.matchAll(/#product-([a-z0-9-]+)/g)].map((m) => m[1]);
+  if (route.startsWith('/products/')) {
+    const own = route.split('/').pop();
+    if (!routeIds.includes(own)) failures.push(`${route}: its JSON-LD does not describe ${own}`);
+    // Only the organisation, the website and itself. Describing all eleven
+    // products on every page makes each page's structured data assert things
+    // about products it is not about.
+    if (routeIds.length > 1) {
+      failures.push(`${route}: JSON-LD describes ${routeIds.length} products, expected only its own`);
+    }
+  }
+
+  const ld = document.match(/<script type="application\/ld\+json">/g) ?? [];
+  if (ld.length !== 1) failures.push(`${route}: expected one JSON-LD block, found ${ld.length}`);
+
+  const h1s = (document.replace(/<noscript>[\s\S]*?<\/noscript>/g, ' ').match(/<h1[\s>]/g) ?? []).length;
+  if (h1s !== 1) failures.push(`${route}: expected exactly one h1, found ${h1s}`);
+
+  // A bare `#id` is a same-document anchor and must resolve here. A root-relative
+  // `/#id` points at a section of the homepage, so it is resolved against the
+  // homepage's document instead — checking it here is how the product pages
+  // reported a working link to the closing call to action as broken.
+  const documentIds = new Set([...document.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
+  const homeIds = route === '/' ? documentIds : homeSectionIds;
+  const dead = [
+    ...new Set([
+      ...[...document.matchAll(/href="#([^"]*)"/g)]
+        .map((m) => m[1])
+        .filter((id) => id && !documentIds.has(id)),
+    ]),
+  ];
+  if (dead.length) failures.push(`${route}: same-page anchors with no matching id: ${dead.join(', ')}`);
+
+  const deadHome = [
+    ...new Set(
+      [...document.matchAll(/href="\/#([^"]*)"/g)]
+        .map((m) => m[1])
+        .filter((id) => id && !homeIds.has(id)),
+    ),
+  ];
+  if (deadHome.length) {
+    failures.push(`${route}: links to homepage sections that do not exist: ${deadHome.join(', ')}`);
+  }
+}
+
+// A real 404 document, marked noindex so it is never indexed as content.
+try {
+  const notFound = await readFile(join(dist, '404.html'), 'utf8');
+  if (!/name="robots" content="noindex/.test(notFound)) {
+    failures.push('404.html is not marked noindex');
+  }
+  if (!/<div id="root"><div/.test(notFound)) failures.push('404.html has no prerendered markup');
+} catch {
+  failures.push('the prerender produced no 404.html');
+}
+
+// Every route in the sitemap, and nothing in the sitemap that does not exist.
+const sitemapLocs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(site, ''));
+for (const route of routes) {
+  if (!sitemapLocs.includes(route)) failures.push(`${route} is missing from the sitemap`);
+}
+for (const loc of sitemapLocs) {
+  if (!routes.includes(loc)) failures.push(`the sitemap lists ${loc}, which is not a route`);
+}
+
 // --- Report -----------------------------------------------------------------
 if (failures.length) {
   console.error(`build output: ${failures.length} problem(s)\n`);

@@ -34,7 +34,7 @@ export function Philosophy() {
       </ol>
 
       <Reveal className="mt-8 text-center">
-        <a href="#connect" className="btn-quiet text-gold-text">
+        <a href="/connect" className="btn-quiet text-gold-text">
           See these principles in the architecture
           <span aria-hidden="true">→</span>
         </a>

@@ -103,7 +103,7 @@ export function ProductsMenu({ disclosure, hover, buttonRef }: ProductsMenuProps
             </ul>
             <div className="mt-1 border-t border-line px-2 pt-2 pb-1">
               <a
-                href="#products"
+                href="/products"
                 className="btn-quiet !px-1.5 !py-1.5 text-[13px] text-gold-text"
                 onClick={disclosure.close}
               >

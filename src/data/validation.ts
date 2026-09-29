@@ -1,5 +1,5 @@
 import { areas, products, productsInArea, productSchemas, statusOrder, statusDefinitions, statusLabels, type Product } from './areas';
-import { PRODUCTS_ANCHOR, isExternalHref } from './links';
+import { isExternalHref } from './links';
 import { audiences, footerGroups, navLinks, principles, vision } from './site';
 
 export type Issue = {
@@ -114,8 +114,10 @@ export function validateData(): Issue[] {
   // --- Copy the rest of the site reads -----------------------------------
   if (audiences.length === 0) error('no-audiences', 'No audiences defined.');
   for (const audience of audiences) {
-    if (!audience.cta.href.startsWith('#')) {
-      error('invalid-audience-cta', `Audience "${audience.id}": cta must be an on-page anchor.`);
+    // Root-relative for the same reason as the navigation links: these are
+    // followed from the product pages as well as the homepage.
+    if (!audience.cta.href.startsWith('/#')) {
+      error('invalid-audience-cta', `Audience "${audience.id}": cta must be a root-relative anchor such as /#ecosystem.`);
     }
   }
   if (principles.length === 0) error('no-principles', 'No principles defined.');
@@ -127,11 +129,24 @@ export function validateData(): Issue[] {
     'main', 'about', 'ecosystem', 'products', 'connect', 'technology', 'built-for', 'philosophy', 'vision', 'start',
   ]);
   for (const link of [...navLinks, ...footerGroups.flatMap((group) => group.links)]) {
-    if (link.href.startsWith('#') && link.href !== PRODUCTS_ANCHOR && !sectionIds.has(link.href.slice(1))) {
+    // Section links are written root-relative, as `/#ecosystem`, because they
+    // are followed from the product pages too and a bare `#ecosystem` resolves
+    // against whatever page the reader is on. On the homepage it is still a
+    // same-document navigation, so nothing is lost.
+    //
+    // External links are not section links.
+    if (isExternalHref(link.href)) continue;
+
+    // `#main` is the one exception and is deliberately not root-relative: every
+    // page has a `main`, so the skip link must stay on the current document.
+    if (link.href === '#main') continue;
+
+    const anchor = link.href.startsWith('/#') ? link.href.slice(2) : link.href.slice(1);
+    if (!sectionIds.has(anchor)) {
       error('dead-internal-link', `Navigation link "${link.href}" (${link.label}) has no matching section id.`);
     }
-    if (link.href === PRODUCTS_ANCHOR && !sectionIds.has('products')) {
-      error('dead-internal-link', 'Navigation links to the products anchor, which does not exist.');
+    if (!link.href.startsWith('/#')) {
+      error('non-absolute-section-link', `Navigation link "${link.href}" (${link.label}) is not root-relative, so it resolves against the current page.`);
     }
   }
 

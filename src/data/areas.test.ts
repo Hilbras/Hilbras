@@ -88,9 +88,20 @@ describe('status semantics', () => {
 });
 
 describe('link helpers', () => {
-  it('falls back to the products anchor when a product has no site', () => {
-    expect(productHref({ href: undefined })).toBe(PRODUCTS_ANCHOR);
-    expect(productHref({ href: 'https://example.dev' })).toBe('https://example.dev');
+  it('sends every product to its own page, whatever else it has', () => {
+    // A product with a site, a repository, both or neither still resolves to its
+    // own address. The page is where the registry meets the outside world, and
+    // routing a reader straight out to GitHub meant eight of eleven products had
+    // no page a search engine could index.
+    expect(productHref({ id: 'sdk' })).toBe('/products/sdk');
+    expect(productHref({ id: 'studio' })).toBe('/products/studio');
+    expect(productHref({ id: 'gateway' })).toBe('/products/gateway');
+    expect(productHref({ id: 'os' })).toBe('/products/os');
+  });
+
+  it('uses the products anchor only for links about products in general', () => {
+    // Still the right target for a section link, a nav entry or a footer column.
+    expect(PRODUCTS_ANCHOR).toBe('#products');
   });
 
   it('recognises external links and leaves internal ones alone', () => {

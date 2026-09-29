@@ -38,7 +38,7 @@ export function Hero() {
           </p>
 
           <div className="hero-in hero-in-4 mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href="#ecosystem" className="btn-gold">
+            <a href="/ecosystem" className="btn-gold">
               Explore the ecosystem
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
@@ -87,7 +87,7 @@ export function Hero() {
               <p className="muted text-[11px]">
                 Every product stands on its own. The connections are an option, not a requirement.
               </p>
-              <a href="#connect" className="btn-quiet !px-2 !py-1 text-[11px] text-gold-text">
+              <a href="/connect" className="btn-quiet !px-2 !py-1 text-[11px] text-gold-text">
                 See how it connects
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </a>

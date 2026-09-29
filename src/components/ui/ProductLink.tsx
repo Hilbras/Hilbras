@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import type { Product } from '../../data/areas';
-import { externalRel, isExternalHref, productHref } from '../../data/links';
+import { productHref } from '../../data/links';
 
 type ProductLinkProps = {
-  product: Pick<Product, 'name' | 'href'>;
+  product: Pick<Product, 'id' | 'name'>;
   className?: string;
   children: ReactNode;
   onClick?: () => void;
@@ -19,29 +19,15 @@ type ProductLinkProps = {
 /**
  * The single place a product link is built.
  *
- * A product with no public site falls back to the products section; anything
- * with a site opens in a new tab with a safe `rel` and the "opens in a new tab"
- * announcement for screen readers. Six components were each reimplementing that
- * decision, and two of them had shipped it slightly differently.
+ * Every product has a page now, so these are internal links: they navigate
+ * rather than open a new tab, and carry no `target` or `rel`. Six components
+ * used to each reimplement that decision, and two had shipped the
+ * "opens in a new tab" announcement with different wording.
  */
-export function ProductLink({ product, className, children, onClick, nameIsNotVisible }: ProductLinkProps) {
-  const href = productHref(product);
-  const external = isExternalHref(href);
-
+export function ProductLink({ product, className, children, onClick }: ProductLinkProps) {
   return (
-    <a
-      href={href}
-      className={className}
-      onClick={onClick}
-      target={external ? '_blank' : undefined}
-      rel={externalRel(href)}
-    >
+    <a href={productHref(product)} className={className} onClick={onClick}>
       {children}
-      {external ? (
-        <span className="sr-only">
-          {nameIsNotVisible ? ` — ${product.name}` : ''} (opens in a new tab)
-        </span>
-      ) : null}
     </a>
   );
 }

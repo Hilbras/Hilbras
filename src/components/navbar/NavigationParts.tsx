@@ -27,7 +27,7 @@ export function NavbarActions({ mobile }: NavbarActionsProps) {
         <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="sr-only">(opens in a new tab)</span>
       </a>
-      <a href="#start" className="btn-gold hidden sm:inline-flex">
+      <a href="/#start" className="btn-gold hidden sm:inline-flex">
         Get started
         <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
       </a>
@@ -109,7 +109,7 @@ export function MobileNavigation({ disclosure }: MobileNavigationProps) {
           <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           <span className="sr-only">(opens in a new tab)</span>
         </a>
-        <a href="#start" onClick={disclosure.close} className="btn-gold mt-2 w-full">
+        <a href="/#start" onClick={disclosure.close} className="btn-gold mt-2 w-full">
           Get started
           <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         </a>

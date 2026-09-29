@@ -43,9 +43,9 @@ export const site = {
 export type NavLink = { href: string; label: string };
 
 export const navLinks: readonly NavLink[] = [
-  { href: '#ecosystem', label: 'Ecosystem' },
-  { href: '#technology', label: 'Technology' },
-  { href: '#philosophy', label: 'About' },
+  { href: '/#ecosystem', label: 'Ecosystem' },
+  { href: '/#technology', label: 'Technology' },
+  { href: '/#philosophy', label: 'About' },
 ] as const;
 
 /** The three claims the hero makes under its CTAs. */
@@ -66,7 +66,7 @@ export const audiences = [
       'Bring your own keys and your own infrastructure',
       'Readable defaults, no proprietary request format',
     ],
-    cta: { href: '#products', label: 'See the products' },
+    cta: { href: '/#products', label: 'See the products' },
   },
   {
     id: 'businesses',
@@ -78,7 +78,7 @@ export const audiences = [
       'Extensible at the edges that actually change',
       'Auditable identity and access by default',
     ],
-    cta: { href: '#philosophy', label: 'How we build' },
+    cta: { href: '/#philosophy', label: 'How we build' },
   },
   {
     id: 'creators',
@@ -90,7 +90,7 @@ export const audiences = [
       'Automation with an approval step where it matters',
       'Extensions instead of migrations',
     ],
-    cta: { href: '#ecosystem', label: 'Explore the ecosystem' },
+    cta: { href: '/#ecosystem', label: 'Explore the ecosystem' },
   },
 ];
 
@@ -152,19 +152,19 @@ export const footerGroups: ReadonlyArray<{ title: string; links: readonly NavLin
   {
     title: 'Resources',
     links: [
-      { href: '#ecosystem', label: 'Ecosystem' },
-      { href: '#connect', label: 'Ecosystem map' },
-      { href: '#technology', label: 'Technology areas' },
-      { href: '#built-for', label: 'Built for' },
+      { href: '/#ecosystem', label: 'Ecosystem' },
+      { href: '/#connect', label: 'Ecosystem map' },
+      { href: '/#technology', label: 'Technology areas' },
+      { href: '/#built-for', label: 'Built for' },
       { href: 'https://github.com/Hilbras', label: 'GitHub' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { href: '#about', label: 'About' },
-      { href: '#philosophy', label: 'Philosophy' },
-      { href: '#vision', label: 'Vision' },
+      { href: '/#about', label: 'About' },
+      { href: '/#philosophy', label: 'Philosophy' },
+      { href: '/#vision', label: 'Vision' },
     ],
   },
 ] as const;

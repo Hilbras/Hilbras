@@ -47,16 +47,24 @@ createServer(async (req, res) => {
     res.writeHead(403).end('forbidden');
     return;
   }
+
+  // A real static host serves a directory's index.html, and a path that matches
+  // nothing as 404 with `404.html` and a 404 status. Falling back to the
+  // homepage for everything else is what a dev server does, and it made the
+  // unknown-path test assert nothing.
+  let status = 200;
   try {
     const info = await stat(path);
     if (info.isDirectory()) path = join(path, 'index.html');
+    await stat(path);
   } catch {
-    path = join(dist, 'index.html');
+    path = join(dist, '404.html');
+    status = 404;
   }
 
   try {
     const body = await readFile(path);
-    res.writeHead(200, {
+    res.writeHead(status, {
       'Content-Type': types[extname(path)] ?? 'application/octet-stream',
       ...headersFor(url.pathname),
     });

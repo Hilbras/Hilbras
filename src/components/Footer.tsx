@@ -16,7 +16,7 @@ export function Footer() {
             <span>{site.name}</span>
           </a>
           <p className="muted mt-3 max-w-[26ch] text-[13px] leading-relaxed">{site.tagline}</p>
-          <a href="#start" className="btn-gold mt-5 !px-3.5 !py-2 !text-[13px]">
+          <a href="/#start" className="btn-gold mt-5 !px-3.5 !py-2 !text-[13px]">
             Get started
           </a>
         </div>

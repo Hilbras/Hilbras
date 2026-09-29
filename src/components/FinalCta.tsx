@@ -28,7 +28,7 @@ export function FinalCta() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href="#products" className="btn-gold">
+            <a href="/products" className="btn-gold">
               Explore products
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
