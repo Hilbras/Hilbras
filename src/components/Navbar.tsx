@@ -25,9 +25,19 @@ export function Navbar() {
   const { close: closeMobile } = mobile;
   const { close: closeDropdown, open: openDropdown } = dropdown;
 
+  const cancelHoverIntents = () => {
+    window.clearTimeout(closeTimer.current);
+    window.clearTimeout(openTimer.current);
+  };
+
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      // The hover-intent timers have to go too. A pointer sitting over the
+      // trigger means `mouseenter` already queued an open, and that queued open
+      // lands about 80ms later — long enough for the panel to reopen itself
+      // after a keyboard user dismissed it.
+      cancelHoverIntents();
       closeMobile();
       closeDropdown();
       productsButtonRef.current?.focus();
@@ -36,17 +46,11 @@ export function Navbar() {
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, [closeMobile, closeDropdown]);
 
-  useEffect(
-    () => () => {
-      window.clearTimeout(closeTimer.current);
-      window.clearTimeout(openTimer.current);
-    },
-    [],
-  );
+  useEffect(() => cancelHoverIntents, []);
 
   const cancelClose = () => window.clearTimeout(closeTimer.current);
   const scheduleClose = () => {
-    cancelClose();
+    cancelHoverIntents();
     closeTimer.current = window.setTimeout(closeDropdown, 120);
   };
   const scheduleOpen = () => {

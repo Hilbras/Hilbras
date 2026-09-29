@@ -90,6 +90,11 @@ export function useDisclosure(duration = 180) {
     setIsOpen(false);
     setState('closed');
     window.clearTimeout(closeTimer.current);
+    // Cancel the pending open frame. Without this, a close that lands in the same
+    // tick as an open — Escape pressed immediately after opening, or a click
+    // followed by a blur — is undone when the frame fires, leaving a panel
+    // rendered fully open while `aria-expanded` says it is closed.
+    window.cancelAnimationFrame(openFrame.current);
     // Stay mounted for the length of the transition so the exit is not cut off.
     closeTimer.current = window.setTimeout(() => setMounted(false), duration);
   }, [duration]);

@@ -94,7 +94,7 @@ export function FeaturedProductCard({ product }: ProductCardProps) {
 }
 
 /** The standard card, used by the grid under the featured row. */
-function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product }: ProductCardProps) {
   const area = areaById.get(product.area);
 
   return (

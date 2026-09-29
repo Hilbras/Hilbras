@@ -4,6 +4,7 @@ dist-ssr
 .ssr
 .vercel
 .vite
+coverage
 *.local
 .DS_Store
 .env
