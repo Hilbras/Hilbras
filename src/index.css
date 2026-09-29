@@ -653,22 +653,22 @@
 }
 
 /* ------------------------------------------------------------------ *
- * Page enter / exit
+ * No page-enter animation, deliberately.
+ *
+ * It used to fade the whole document in over 420ms. On a client-rendered
+ * page that was a pleasant entrance; on a prerendered one it is a defect in
+ * two ways.
+ *
+ * It hid content the browser had already painted. The prerender step exists so
+ * the first paint is real markup, and this was throwing it away for 420ms.
+ *
+ * And it cost 58 MB. `transform` on an ancestor makes it the containing block
+ * for `position: fixed` descendants, so the background particle canvas sized
+ * itself to the whole 10,584px document instead of the 900px viewport — a
+ * 1440x10584 backing store, cleared in full on every frame. The `translate`
+ * property would not have caused that, and the individual section reveals
+ * already use it, but the simplest correct answer is not to hide the page.
  * ------------------------------------------------------------------ */
-@keyframes page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-enter {
-  animation: page-enter 420ms var(--ease-out) both;
-}
 
 @keyframes flow-travel {
   0% {
@@ -723,7 +723,6 @@
     scroll-behavior: auto;
   }
 
-  .page-enter,
   .soft-pulse,
   .flow-travel {
     animation: none !important;

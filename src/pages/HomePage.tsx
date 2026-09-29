@@ -15,7 +15,10 @@ import { Vision } from '../components/Vision';
 export function HomePage() {
   return (
     <>
-      <div className="page-enter min-h-screen overflow-x-clip">
+      {/* No page-enter animation: it hid the prerendered content, and its
+          `transform` made this wrapper the containing block for the fixed
+          particle canvas, which sized to the whole document. See index.css. */}
+      <div className="min-h-screen overflow-x-clip">
         <ParticleField />
         <Navbar />
 
