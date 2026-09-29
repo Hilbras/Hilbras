@@ -619,7 +619,16 @@
   html.has-js .stagger > .reveal:nth-child(8) { transition-delay: calc(var(--reveal-delay) + 7 * var(--reveal-stagger)); }
   html.has-js .stagger > .reveal:nth-child(n + 9) { transition-delay: calc(var(--reveal-delay) + 8 * var(--reveal-stagger)); }
 
-  /* The hero plays on load rather than on scroll. */
+  /* The hero plays on load rather than on scroll.
+     Translate only, never opacity. This is the same lesson as the removed
+     page-enter animation, learned a second time: the hero heading is the
+     largest contentful paint on the site's most important page, and an element
+     at `opacity: 0` is not painted at all. Measured before this change, the
+     homepage `h1` was in the document at 351ms and not fully opaque until
+     1772ms — a second and a half during which the site's headline was
+     invisible, on a page that is prerendered precisely so the first paint is
+     real markup. The slide survives, because motion is not the thing that
+     costs a paint; the fade was. */
   html.has-js .hero-in {
     animation: hero-in var(--reveal-item-duration) var(--ease-out) both;
   }
@@ -636,11 +645,9 @@
 
 @keyframes hero-in {
   from {
-    opacity: 0;
     translate: 0 22px;
   }
   to {
-    opacity: 1;
     translate: 0 0;
   }
 }

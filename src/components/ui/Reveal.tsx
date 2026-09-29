@@ -15,6 +15,15 @@ type RevealProps = {
  * reduced-motion preference, so the page is never hidden from someone who
  * cannot or does not want to see the transition. This component only adds a
  * class; it never sets an inline style, which is what keeps it compositor-only.
+ *
+ * Known tail risk, recorded rather than solved: the hidden state is applied by a
+ * blocking script in `<head>`, and the class that clears it is added from the
+ * React bundle. If the bundle never executes, the reveal state stays hidden and
+ * the prerendered content is present but invisible. Moving the class into the
+ * bundle would fix that and introduce a worse one — a flash of visible content
+ * between first paint and hydration, on every page, for every reader. The
+ * exposure is a bundle that loads and does not run, which is narrower than the
+ * flash it would replace.
  */
 export function Reveal({ children, variant = 'item', className = '', as: Tag = 'div' }: RevealProps) {
   const ref = useRef<HTMLElement>(null);
@@ -25,6 +34,19 @@ export function Reveal({ children, variant = 'item', className = '', as: Tag = '
 
     // Anything that cannot observe is shown immediately rather than left hidden.
     if (typeof IntersectionObserver === 'undefined') {
+      element.classList.add('is-visible');
+      return;
+    }
+
+    // Already on screen? Reveal it now rather than waiting for the observer.
+    //
+    // The observer does fire for intersecting elements as soon as it is
+    // observed, so this is not fixing a slow observer — it removes the
+    // dependence on one. Content in the initial viewport is the content a
+    // reader is looking at and the content a search engine measures, and it
+    // should not be visible only as a side effect of an observer's scheduling.
+    const box = element.getBoundingClientRect();
+    if (box.top < window.innerHeight && box.bottom > 0) {
       element.classList.add('is-visible');
       return;
     }

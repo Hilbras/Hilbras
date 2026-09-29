@@ -124,6 +124,64 @@ test.describe('runtime cost', () => {
     expect(cls, `cumulative layout shift was ${cls.toFixed(4)}`).toBeLessThan(0.1);
   });
 
+  test('paints the heading without waiting for an animation', async ({ page }) => {
+    // The single most important element on the site is its largest contentful
+    // paint, and an element at `opacity: 0` is not painted at all.
+    //
+    // The hero used to fade in: its `h1` was in the document at 351ms and not
+    // fully opaque until 1772ms. On a page that is prerendered specifically so
+    // the first paint is real markup, that is a second and a half of invisible
+    // headline. The same lesson as the removed page-enter animation, learned a
+    // second time — the slide survives, the fade does not.
+    await page.goto('/', { waitUntil: 'load' });
+
+    const heading = await page.evaluate(() => {
+      const h1 = document.querySelector('main h1');
+      if (!h1) return null;
+      const style = getComputedStyle(h1);
+      return {
+        opacity: Number(style.opacity),
+        // A pending animation is fine — the slide is the entrance. A pending
+        // *opacity* animation is what makes the element unpainted.
+        animatingOpacity: h1
+          .getAnimations()
+          .some((animation) =>
+            animation.effect?.getKeyframes().some((frame) => 'opacity' in frame),
+          ),
+      };
+    });
+
+    expect(heading, 'the homepage has no h1').not.toBeNull();
+    expect(heading!.opacity, 'the heading is not fully opaque').toBe(1);
+    expect(heading!.animatingOpacity, 'the heading is still fading in').toBe(false);
+  });
+
+  test('shows content in the initial viewport without scrolling', async ({ page }) => {
+    // Same reasoning for the scroll reveals: whatever is on screen when the page
+    // loads must be legible, not waiting on an observer's scheduling.
+    for (const route of ['/', '/products', '/products/sdk', '/products/os']) {
+      await page.goto(route, { waitUntil: 'load' });
+      await page.waitForTimeout(400);
+
+      // "Substantially in view", meaning the element's centre is on screen. The
+      // reveal threshold is 16% visible, so anything whose middle is showing has
+      // long passed it — and a card whose top edge has only just entered is
+      // correctly still hidden, because revealing it is what the scroll is for.
+      const hiddenInView = await page.evaluate(() =>
+        [...document.querySelectorAll('.reveal')]
+          .filter((element) => {
+            const box = element.getBoundingClientRect();
+            const centre = box.top + box.height / 2;
+            const inView = centre > 0 && centre < window.innerHeight;
+            return inView && Number(getComputedStyle(element).opacity) < 0.99;
+          })
+          .map((element) => (element.textContent ?? '').trim().slice(0, 40)),
+      );
+
+      expect(hiddenInView, `content in view but hidden on ${route}`).toEqual([]);
+    }
+  });
+
   test('makes no third-party requests', async ({ page, baseURL }) => {
     // Compared against the configured baseURL rather than `page.url()`, which
     // is `about:blank` until the first navigation and would make every request
