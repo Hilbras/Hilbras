@@ -114,6 +114,7 @@ pnpm serve:headers      # dist/ with the real vercel.json headers
 pnpm check              # everything below — run this before pushing
 pnpm assert:build       # the built document is crawlable
 pnpm assert:headers     # the security policy is strong
+pnpm assert:design      # no colour literals, no arbitrary type values
 pnpm verify:validator   # proves assert-style checks actually fire
 pnpm verify:build-assertion
 pnpm check:all          # check + the browser suite
@@ -123,7 +124,8 @@ pnpm check:all          # check + the browser suite
 
 ```text
 typecheck → lint → tests + coverage → validator self-test
-          → build → build-output assertions → header assertions → smoke
+          → build → build-output assertions → header assertions → design
+          → smoke
 ```
 
 It starts its own server for the smoke step, so it works on a clean machine with
@@ -427,6 +429,19 @@ declarations**.
 --gold-border / --glow / --success / --danger / --shadow
 ```
 
+The type scale is tokenised too, including the four steps Tailwind does not have:
+
+```text
+--text-9  --text-11  --text-13  --text-15     9px, 11px, 13px, 15px
+--tracking-card  --tracking-feature           -0.02em, -0.03em
+--tracking-label --tracking-claim             0.08em, 0.12em
+```
+
+Those were `text-[13px]` and friends in fifty places across eighteen components,
+which meant changing one meant finding every use. `pnpm assert:design` fails if a
+colour literal or an arbitrary type value reappears, and both are silent
+otherwise — the component renders, just not from the system.
+
 Component classes: `.shell`, `.section-band`, `.section-pad`, `.card`,
 `.card-glow`, `.btn-gold`, `.btn-ghost`, `.btn-quiet`, `.eyebrow`, `.eyebrow-dot`,
 `.mono-label`, `.section-title`, `.display-title`, `.gold-text`, `.hairline`,
@@ -711,10 +726,15 @@ gating on the same commands as `pnpm check`.
 
 | Job | Does |
 | --- | --- |
-| `check` | install, typecheck, lint, tests with coverage, validator self-test, build, build-output assertions, build-assertion self-test, uploads `dist/` |
+| `check` | install, typecheck, lint, tests with coverage, validator self-test, build, build-output assertions, design system, build-assertion self-test, uploads `dist/` |
 | `e2e` | installs Chromium and Firefox, builds, runs the browser suite, uploads the report and any traces on failure |
 | `smoke` | runs `scripts/smoke.mjs` against a local server, and against `vars.SMOKE_URL` if one is configured |
 | `security` | `pnpm audit --audit-level=high --prod` and the header assertions |
+
+`assert-design-system.mjs` fails on the two ways of bypassing the token layer: a
+colour literal in a component, which makes the theme unable to change it, and a
+`text-[...]` or `tracking-[...]`, which is a scale step that does not exist. Both
+are silent — the component renders, just not from the system.
 
 The build step is worth having on this repository in particular: it is a
 single-page site whose HTML is generated, so a change can typecheck, lint, pass
