@@ -56,6 +56,25 @@ export type Product = {
   /** Published documentation, when it exists separately from the repository. */
   documentation?: string;
   /**
+   * How to install it, when it is published to a registry.
+   *
+   * Every value here was read from the project's own README and the npm
+   * registry, not written from memory. `verified` records when, because a version
+   * goes stale and a product page quoting an old one is a small lie — the date is
+   * shown on the page so a reader can judge it.
+   */
+  developer?: {
+    /** The published package name, scoped where it is. */
+    package: string;
+    /** The latest published version at `verified`. */
+    version: string;
+    /** The install command, taken from the project's README. */
+    install: string;
+    license: string;
+    /** ISO date the version above was read from the registry. */
+    verified: string;
+  };
+  /**
    * Where it runs. Optional, because "cross-platform" is true of nearly
    * everything here and stating it eleven times is noise; a product that is not
    * cross-platform says so.
@@ -140,6 +159,13 @@ export const products: readonly Product[] = [
     kind: 'library',
     status: 'stable',
     documentation: 'https://github.com/Hilbras/Hilbras-ai-sdk#readme',
+    developer: {
+      package: '@hilbras/sdk',
+      version: '3.2.0',
+      install: 'npm install @hilbras/sdk',
+      license: 'MIT',
+      verified: '2026-09-30',
+    },
     mark: 'diamond',
     featured: true,
     repository: 'https://github.com/Hilbras/Hilbras-ai-sdk',
@@ -154,6 +180,13 @@ export const products: readonly Product[] = [
     kind: 'service',
     status: 'stable',
     documentation: 'https://github.com/Hilbras/Remembra#readme',
+    developer: {
+      package: '@hilbras/remembra',
+      version: '5.6.0',
+      install: 'npm install -g @hilbras/remembra',
+      license: 'MIT',
+      verified: '2026-09-30',
+    },
     mark: 'memory',
     featured: true,
     repository: 'https://github.com/Hilbras/Remembra',
@@ -168,6 +201,13 @@ export const products: readonly Product[] = [
     kind: 'service',
     status: 'stable',
     documentation: 'https://github.com/Hilbras/Keystone#readme',
+    developer: {
+      package: '@hilbras/keystone',
+      version: '3.5.3',
+      install: 'npm install -g @hilbras/keystone',
+      license: 'MIT',
+      verified: '2026-09-30',
+    },
     mark: 'keystone',
     featured: true,
     repository: 'https://github.com/Hilbras/Keystone',
@@ -220,6 +260,13 @@ export const products: readonly Product[] = [
     kind: 'service',
     status: 'beta',
     documentation: 'https://github.com/Hilbras/OmniHilbras#readme',
+    developer: {
+      package: '@hilbras/omnihilbras',
+      version: '1.30.0',
+      install: 'npm i @hilbras/omnihilbras',
+      license: 'MIT',
+      verified: '2026-09-30',
+    },
     mark: 'prism',
     featured: true,
     repository: 'https://github.com/Hilbras/OmniHilbras',
@@ -246,6 +293,13 @@ export const products: readonly Product[] = [
     kind: 'application',
     status: 'alpha',
     documentation: 'https://github.com/Hilbras/Hilbras-code#readme',
+    developer: {
+      package: 'hilbras-code',
+      version: '0.1.0',
+      install: 'npm install -g hilbras-code',
+      license: 'MIT',
+      verified: '2026-09-30',
+    },
     mark: 'terminal',
     repository: 'https://github.com/Hilbras/Hilbras-code',
   },

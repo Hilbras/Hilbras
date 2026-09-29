@@ -220,6 +220,8 @@ if (site) {
     expected.replace(/\/$/, ''),
     'https://github.com',
     'https://schema.org',
+    // SPDX identifiers for the licence a published package ships under.
+    'https://spdx.org',
   ]);
   for (const source of [await read('src/data/site.ts'), await read('src/data/areas.ts')]) {
     for (const product of source.match(/href: '(https:[^']+)'/g) ?? []) {

@@ -344,6 +344,13 @@ nine of eleven products. `features`, `useCases` and `integrations` are
 deliberately absent: inventing eleven products' feature lists is not something a
 website should do. They arrive the day the data supports them.
 
+`developer` holds the published package name, version, licence and install
+command, and is what the **Install it** section on a product page renders. Five
+of the eleven have one; the other six have no registry package and get no
+section. The values were read from the npm registry and each project's README,
+and the page shows the date they were read, because a version quoted without a
+date is a version nobody checked. `docs/DEPENDENCIES.md` has the full audit.
+
 ### Adding a product
 
 1. Add the record above to `products` in `src/data/areas.ts`.
@@ -818,5 +825,9 @@ patch. A new section, a new generated file, or a new command is a minor.
   derived from: what was reused, what was adapted, what is specific to Hilbras.
 - `docs/VERIFICATION.md` — the measured claims in this file, with the commands
   that produce them and what could not be checked.
+- `docs/DEPENDENCIES.md` — the product dependency audit: every manifest in the
+  `github.com/Hilbras` organisation, and the result that **no Hilbras product
+  depends on any other**. That is why the connection map says "independent by
+  default" rather than drawing dependency lines it cannot substantiate.
 - `../OmniHilbras` — the design reference. **Not modified by this project, and not
   to be.**

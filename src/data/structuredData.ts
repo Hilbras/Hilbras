@@ -75,6 +75,17 @@ export function buildGraph(origin: string = resolveSiteUrl()): JsonNode[] {
     // rather than assert the obvious.
     if (product.platform) node.operatingSystem = product.platform;
 
+    // A real version, and the licence it ships under.
+    //
+    // This property used to carry a status sentence, which was a misuse of it. It
+    // is only correct when it is a version, so it appears only for the products
+    // that are actually published to a registry — and for those it is the
+    // authoritative answer rather than a claim.
+    if (product.developer) {
+      node.softwareVersion = product.developer.version;
+      node.license = `https://spdx.org/licenses/${product.developer.license}`;
+    }
+
     if (product.repository) {
       node.codeRepository = product.repository;
       node.isAccessibleForFree = true;

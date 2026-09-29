@@ -109,6 +109,37 @@ describe('the product page', () => {
     expect(screen.getByText(/does not require any of these/)).toBeInTheDocument();
   });
 
+  it('shows how to install it, and dates the version', () => {
+    render(<ProductPage product={sdk} />);
+    const heading = screen.getByRole('heading', { level: 2, name: 'Install it' });
+    expect(heading).toBeInTheDocument();
+
+    expect(screen.getByText(sdk.developer!.package)).toBeInTheDocument();
+    expect(screen.getByText(`v${sdk.developer!.version} · ${sdk.developer!.license}`)).toBeInTheDocument();
+    expect(screen.getByText(sdk.developer!.install)).toBeInTheDocument();
+    // A version quoted without a date is a version nobody checked.
+    expect(screen.getByText(new RegExp(`registry on ${sdk.developer!.verified}`))).toBeInTheDocument();
+  });
+
+  it('omits the install section for a product that is not published', () => {
+    // Six of eleven have no registry package, and an empty "Install it" heading
+    // on those would be worse than no section.
+    for (const id of ['gateway', 'os', 'hilgit', 'hilpress', 'spectra', 'studio']) {
+      const { unmount } = render(<ProductPage product={productById.get(id)!} />);
+      expect(screen.queryByRole('heading', { name: 'Install it' }), id).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('publishes an install section for every product that has a package', () => {
+    for (const product of products.filter((p) => p.developer)) {
+      const { unmount } = render(<ProductPage product={product} />);
+      expect(screen.getByRole('heading', { name: 'Install it' }), product.id).toBeInTheDocument();
+      expect(screen.getByText(product.developer!.package), product.id).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('states the running platform only when it is specific', () => {
     const { unmount } = render(<ProductPage product={sdk} />);
     // "Cross-platform" would be true of nearly everything and would tell a

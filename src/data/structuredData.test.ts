@@ -78,9 +78,34 @@ describe('structured data', () => {
     }
   });
 
-  it('does not abuse softwareVersion to carry a status sentence', () => {
+  it('publishes softwareVersion only where it really is a version', () => {
+    // The property used to carry a status sentence, which was a misuse. It is
+    // correct when it is a version, so it appears only for the products actually
+    // published to a registry — and then it is the authoritative answer.
+    const published = products.filter((product) => product.developer);
+    expect(published.length).toBeGreaterThan(0);
+
     for (const node of graph) {
-      expect(node.softwareVersion).toBeUndefined();
+      if (node.softwareVersion === undefined) continue;
+      expect(String(node.softwareVersion)).toMatch(/^\d+\.\d+\.\d+/);
+    }
+
+    for (const product of products) {
+      const node = productNodes.find((n) => n['@id'] === `${site.domain}/#product-${product.id}`);
+      if (product.developer) {
+        expect(node?.softwareVersion, product.id).toBe(product.developer.version);
+        expect(node?.license, product.id).toContain(product.developer.license);
+      } else {
+        expect(node?.softwareVersion, `${product.id} is not published`).toBeUndefined();
+        expect(node?.license, `${product.id} is not published`).toBeUndefined();
+      }
+    }
+  });
+
+  it('never puts a status sentence in softwareVersion', () => {
+    for (const node of graph) {
+      if (node.softwareVersion === undefined) continue;
+      expect(String(node.softwareVersion)).not.toMatch(/publicly released|still changing|under active/i);
     }
   });
 

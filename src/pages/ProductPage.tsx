@@ -118,6 +118,8 @@ export function ProductPage({ product }: { product: Product }) {
 
       <ProductFacts product={product} areas={productAreas} />
 
+      {product.developer ? <ProductDeveloper product={product} /> : null}
+
       {related.length > 0 ? <RelatedProducts product={product} related={related} /> : null}
 
       <section aria-labelledby="next-heading" className="border-t border-line/70">
@@ -190,6 +192,69 @@ function ProductResources({ product }: { product: Product }) {
         ))}
       </div>
     </Reveal>
+  );
+}
+
+/**
+ * How to install it, for the products that are published to a registry.
+ *
+ * Omitted entirely for the six that are not, rather than shown empty. This is
+ * the section a developer lands on, and it is the reason the package name and
+ * version are in the data layer at all.
+ *
+ * The version is dated on the page. It was read from the registry, and a
+ * registry version goes out of date; showing the date lets a reader judge whether
+ * to trust it rather than having to check npm themselves.
+ */
+function ProductDeveloper({ product }: { product: Product }) {
+  const developer = product.developer!;
+
+  return (
+    <section aria-labelledby="developer-heading" className="border-b border-line/70">
+      <div className="shell section-pad">
+        <div className="mx-auto max-w-3xl">
+          <Reveal>
+            <h2 id="developer-heading" className="section-title text-2xl sm:text-3xl">
+              Install it
+            </h2>
+          </Reveal>
+
+          <Reveal className="mt-6">
+            <div className="overflow-hidden rounded-xl border border-line bg-surface-2/60">
+              <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+                <code className="font-mono text-13 text-gold-text">{developer.package}</code>
+                <span className="muted font-mono text-11">
+                  v{developer.version} · {developer.license}
+                </span>
+              </div>
+              <pre className="overflow-x-auto px-4 py-3.5 font-mono text-13">
+                <code>{developer.install}</code>
+              </pre>
+            </div>
+          </Reveal>
+
+          <Reveal className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="muted text-xs">
+              Version read from the npm registry on {developer.verified}.
+            </span>
+            {product.repository ? (
+              <a
+                href={product.repository}
+                className="inline-flex items-center gap-1.5 text-xs text-gold-text transition-opacity hover:opacity-75"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <GitHubMark className="h-3.5 w-3.5" />
+                Source
+                <span className="sr-only">
+                  for {product.name} (opens in a new tab)
+                </span>
+              </a>
+            ) : null}
+          </Reveal>
+        </div>
+      </div>
+    </section>
   );
 }
 

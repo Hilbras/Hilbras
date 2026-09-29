@@ -72,6 +72,31 @@ export function validateData(): Issue[] {
       error('invalid-documentation-url', `${where}: documentation must be absolute, got "${product.documentation}".`);
     }
 
+    // Developer metadata is copied from a registry and a README, so it can go
+    // stale or be mistyped. A package name that is not a valid npm name, or an
+    // install command for a different package than the one named, is a small lie
+    // on the page and in the structured data.
+    if (product.developer) {
+      const { package: name, version, install, license: licence, verified } = product.developer;
+
+      if (!/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(name)) {
+        error('invalid-package-name', `${where}: "${name}" is not a valid npm package name.`);
+      }
+      if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
+        error('invalid-package-version', `${where}: "${version}" is not a semantic version.`);
+      }
+      if (!install.includes(name)) {
+        error('install-command-mismatch', `${where}: the install command does not mention "${name}".`);
+      }
+      if (!/^[A-Za-z0-9.-]+$/.test(licence)) {
+        error('invalid-license', `${where}: "${licence}" is not an SPDX identifier.`);
+      }
+      // A version quoted without a date is a version nobody checked.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(verified) || Number.isNaN(Date.parse(verified))) {
+        error('missing-verification-date', `${where}: developer.verified must be an ISO date.`);
+      }
+    }
+
     // A product with nothing public gets an honest card. A product that has a
     // repository but claims no status is a data-entry slip, not a judgement.
     if (!product.href && !product.repository && product.status === 'stable') {
