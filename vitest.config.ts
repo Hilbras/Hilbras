@@ -12,7 +12,19 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     // The build output and the compiled SSR bundle are not source.
     exclude: ['node_modules', 'dist', '.ssr'],
-    coverage: {
+    // The default is 5s, which the whole-app tests cannot meet when the coverage
+  // instrumentation is on and the machine is busy: rendering `App` pulls in the
+  // particle canvas, the navigation with its eleven-product panel, and the
+  // footer, and two of these tests do it once per route. Measured at 5.7s and
+  // 7.2s on a loaded host, against 16.8s for the whole file.
+  //
+  // This is not a timeout raised to hide a hang — a hang still fails, just
+  // later. It is the difference between a slow test and a failing one.
+  testTimeout: 20_000,
+  // The browser-level equivalents are the same problem in a different harness
+  // and are configured in playwright.config.ts.
+
+  coverage: {
       provider: 'v8',
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,tsx}'],
