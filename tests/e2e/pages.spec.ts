@@ -52,6 +52,63 @@ test.describe('product pages', () => {
     await expect(page.getByText(/Nothing here is a supported release yet/)).toBeVisible();
   });
 
+  test('shows how to install the published ones, and omits it for the rest', async ({ page }) => {
+    // Five of the eleven have a registry package. The other six get no section
+    // at all, rather than an empty heading — an "Install it" heading on a
+    // product with nothing to install is worse than no heading.
+    const PUBLISHED = [
+      ['sdk', '@hilbras/sdk'],
+      ['keystone', '@hilbras/keystone'],
+      ['remembera', '@hilbras/remembra'],
+      ['omnihilbras', '@hilbras/omnihilbras'],
+      ['code', 'hilbras-code'],
+    ] as const;
+    const UNPUBLISHED = ['gateway', 'os', 'hilgit', 'hilpress', 'spectra', 'studio'];
+
+    for (const [slug, packageName] of PUBLISHED) {
+      await page.goto(`/products/${slug}`, { waitUntil: 'load' });
+      const section = page.locator('section[aria-labelledby="developer-heading"]');
+      await expect(section, slug).toBeVisible();
+      await expect(section.getByText(packageName, { exact: true }), slug).toBeVisible();
+      // The version is dated, because a registry version goes out of date and a
+      // page quoting an old one without saying when is a small lie.
+      await expect(section.getByText(/registry on \d{4}-\d{2}-\d{2}/), slug).toBeVisible();
+      await expect(section.getByText(/npm (install|i) /), slug).toBeVisible();
+    }
+
+    for (const slug of UNPUBLISHED) {
+      await page.goto(`/products/${slug}`, { waitUntil: 'load' });
+      await expect(page.getByRole('heading', { name: 'Install it' }), slug).toHaveCount(0);
+    }
+  });
+
+  test('publishes softwareVersion only for the products on a registry', async ({ page }) => {
+    /** The product node from a page's JSON-LD — not the organisation or the site. */
+    const productNode = async (slug: string) => {
+      await page.goto(`/products/${slug}`, { waitUntil: 'load' });
+      const raw = await page.locator('script[type="application/ld+json"]').textContent();
+      const graph = JSON.parse(raw ?? '{}')['@graph'] as Record<string, unknown>[];
+      const node = graph.find((entry) => entry['@type'] !== 'Organization' && entry['@type'] !== 'WebSite');
+      return node as Record<string, unknown>;
+    };
+
+    for (const [slug, version] of [
+      ['sdk', '3.2.0'],
+      ['keystone', '3.5.3'],
+    ] as const) {
+      const node = await productNode(slug);
+      expect(node.softwareVersion, slug).toBe(version);
+      expect(String(node.license), slug).toContain('spdx.org');
+    }
+
+    // A product with nothing published carries neither. The property used to
+    // carry a status sentence, which was a misuse of it, and had been removed;
+    // it is back only where it is genuinely a version.
+    const unpublished = await productNode('gateway');
+    expect(unpublished.softwareVersion).toBeUndefined();
+    expect(unpublished.license).toBeUndefined();
+  });
+
   test('a product page links its repository and its neighbours', async ({ page }) => {
     await page.goto('/products/sdk', { waitUntil: 'load' });
 
