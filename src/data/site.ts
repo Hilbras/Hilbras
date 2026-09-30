@@ -208,15 +208,43 @@ export const counts = {
  * it is a bug in the data and should read as one rather than silently degrade to
  * a bare digit next to a spelled-out neighbour.
  */
-const numberWords = [
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+const ONES = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
 ] as const;
 
-/** `4` becomes `four`. Throws above twelve, which is a data problem, not a copy one. */
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'] as const;
+
+/**
+ * `4` becomes `four`, `40` becomes `forty`.
+ *
+ * This was a thirteen-entry lookup that threw on anything higher, with the
+ * message "which means the data grew" — so the thirteenth product could not be
+ * added. The company has eleven and is growing, and a build that cannot be
+ * produced because a hero says "Thirteen products" is a scaling wall dressed up
+ * as a data problem. There were no tests for it either.
+ *
+ * The throw remains, above a million: that is a number nobody has thought about,
+ * and a wrong word for it would be a small lie in a heading.
+ */
 export function spell(value: number): string {
-  const word = numberWords[value];
-  if (!word) throw new RangeError(`spell(${value}): no word for this number, which means the data grew`);
-  return word;
+  if (!Number.isInteger(value) || value < 0) {
+    throw new RangeError(`spell(${value}): not a non-negative integer`);
+  }
+  if (value < ONES.length) return ONES[value];
+  if (value > 999_999) {
+    throw new RangeError(`spell(${value}): above a million, which is a number this has not thought about`);
+  }
+  if (value < 100) {
+    const tens = TENS[Math.floor(value / 10)];
+    const ones = value % 10;
+    return ones ? `${tens}-${ONES[ones]}` : tens;
+  }
+
+  const hundreds = Math.floor(value / 100);
+  const rest = value % 100;
+  const head = `${ONES[hundreds]} hundred`;
+  return rest ? `${head} ${spell(rest)}` : head;
 }
 
 /** The same, capitalised for the start of a heading. */

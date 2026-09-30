@@ -351,6 +351,14 @@ nine of eleven products. `features`, `useCases` and `integrations` are
 deliberately absent: inventing eleven products' feature lists is not something a
 website should do. They arrive the day the data supports them.
 
+Counts are spelled out in headings — "Eleven products" — so `spell()` has to
+keep up. It was a thirteen-entry table that threw above twelve, and a test
+asserting it threw, so the thirteenth product could not be added and the wall was
+written into the suite as a property. It now handles units, teens, tens and
+hundreds, throws only above a million, and a test asserts that **no count the
+site states is a number it cannot spell**. The site has been built at forty
+products as a check: 42 routes, and the homepage's HTML doubling to 236 kB.
+
 Titles and meta descriptions are **display slots**. A search result shows about
 60 characters of title and 160 of description; the rest is indexed and never
 read. `assert-build-output.mjs` reports anything past that and fails past 100/200,

@@ -32,19 +32,40 @@ describe('counts the page states', () => {
     expect(counts.public).toBe(products.filter((p) => p.repository || p.href).length);
   });
 
-  it('spells and capitalises numbers, and refuses one it has no word for', () => {
+  it('spells and capitalises numbers', () => {
     expect(spell(4)).toBe('four');
     expect(sentence(4)).toBe('Four');
     expect(spell(0)).toBe('zero');
-    // A number outside the table is a data problem, not a copy one, so it is
-    // loud rather than a bare digit sitting next to a spelled-out neighbour.
-    expect(() => spell(13)).toThrow(RangeError);
-    expect(() => spell(-1)).toThrow(RangeError);
+    expect(spell(11)).toBe('eleven');
   });
 
-  it('stays within the numbers it can spell', () => {
-    for (const value of Object.values(counts)) {
-      expect(value, 'the page states a count it cannot spell').toBeLessThanOrEqual(12);
+  // This was a thirteen-entry table that threw above twelve, and a test asserting
+  // it threw — so the thirteenth product could not be added and the wall was
+  // written into the suite as though it were a property. The company has eleven
+  // products and is growing.
+  it('spells numbers well past the old limit of twelve', () => {
+    expect(spell(13)).toBe('thirteen');
+    expect(spell(20)).toBe('twenty');
+    expect(spell(21)).toBe('twenty-one');
+    expect(spell(40)).toBe('forty');
+    expect(spell(99)).toBe('ninety-nine');
+    expect(spell(100)).toBe('one hundred');
+    expect(spell(113)).toBe('one hundred thirteen');
+    expect(sentence(40)).toBe('Forty');
+  });
+
+  it('refuses a number it genuinely has no word for', () => {
+    // A million is a number nobody has thought about, and guessing a word for it
+    // would be a small lie in a heading. This is the one case still worth a
+    // build failure.
+    expect(() => spell(1_000_000)).toThrow(RangeError);
+    expect(() => spell(-1)).toThrow(RangeError);
+    expect(() => spell(4.5)).toThrow(RangeError);
+  });
+
+  it('states no count it cannot spell', () => {
+    for (const [name, value] of Object.entries(counts)) {
+      expect(() => spell(value as number), `counts.${name} is ${value}`).not.toThrow();
     }
   });
 });

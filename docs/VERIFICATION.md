@@ -220,6 +220,82 @@ URL — the value starts with a scheme and nothing else. That covers `href`, `sr
 `og:url`, `@id` and `codeRepository` without caring which construct delivered it,
 and cannot be defeated by hiding a stray origin in prose.
 
+## Scale
+
+Nothing had been tested past eleven products, and the company has eleven and is
+growing. So: **forty** — twenty-nine generated products with realistic fields,
+one new mark each, spread across all six areas and all four bands.
+
+```console
+prerender: 42 routes + a 404, 1196.6 kB of markup   (at 11: 13 routes, 302.8 kB)
+```
+
+### The site could not be built with thirteen products
+
+```console
+RangeError: spell(40): no word for this number, which means the data grew
+  at Hero (…/entry-server.mjs:3135:13)
+```
+
+The hero spells out the product count, and `spell` was a thirteen-entry lookup
+that threw on anything higher. The throw's own message said "which means the data
+grew" — the author had seen this coming and made it loud rather than wrong.
+
+**And there was a test asserting it threw.** `spell(13)` → `RangeError`, plus
+`counts.*` all `toBeLessThanOrEqual(12)`. The wall was written into the suite as
+though it were a property of the thing. A scaling limit enforced by its own
+regression test is the hardest kind to notice, because the suite is green.
+
+`spell` now handles units, teens, tens and hundreds, so `forty`,
+`twenty-one` and `one hundred thirteen` are all correct. The throw remains above
+a million — a number nobody has thought about, where a guessed word would be a
+small lie in a heading. Two tests replace the old one, and the suite now asserts
+that **no count the site states is a number it cannot spell**, which is the
+invariant that was actually wanted.
+
+### Three things that looked like bugs and were not
+
+Worth recording, because each was a plausible defect and each was wrong.
+
+**The navigation panel "overflowed the viewport".** It measured 1167px tall in an
+800px window, `overflow-y: visible`, last link off-screen. The probe had selected
+the wrapper, not the scroll container inside it. Measured properly — find the
+nearest descendant whose computed `overflow-y` is `auto`, scroll it, then check
+the last link — the panel caps at `min(38rem, 100vh - 7rem)` and every product
+is reachable at 1440×800, 1280×700, 1100×620 and even 1440×**500**.
+
+**The mobile menu had "38 of 50 links outside its own box".** Same error again:
+`[data-state="open"]` matches the hidden desktop panel first in the DOM at a
+mobile width, and measuring a hidden element tells you nothing. Three
+corrections later, the answer was unambiguous — walk every link, ask the browser
+to bring it into view, check whether it is: **`unreachable: 0`** at 390×844,
+360×640 and 320×568.
+
+**`calc()` was stripped from a Tailwind arbitrary value.** The built CSS reads
+`max-height:min(38rem,100vh - 7rem)` — invalid, because subtraction needs
+`calc()`, so a browser would discard the declaration and the cap would vanish.
+This one looked real and checked out: the computed `max-height` is `608px`. The
+minifier rewrote the nested `calc()` into a form that happens to be valid here.
+Worth knowing it is one refactor away from silently losing the cap — which is
+why the panel's behaviour is asserted rather than assumed.
+
+The lesson is the same one the CSS and the fixtures keep teaching: a number
+without a measurement behind it is a guess, and a guess that measures the wrong
+element is worse than no guess.
+
+### What forty products costs
+
+| Route | 11 products | 40 products |
+| --- | --- | --- |
+| `/` | 112.7 kB | 235.7 kB |
+| `/products` | — | 79.6 kB |
+| `/products/:id` | — | 31.7 kB |
+
+The homepage more than doubles, because it shows every product. Gzipped that is
+roughly 30–40 kB, which is unremarkable — but it is a doubling, it is linear in
+the product count, and nobody should be surprised by it. The product pages do not
+grow, because a product page describes one product.
+
 ## Structure and semantics
 
 | Check | Result |
