@@ -321,7 +321,7 @@ function RelatedProducts({ product, related }: { product: Product; related: Prod
           <Reveal className="mt-8">
             <ul className="grid gap-3 sm:grid-cols-2">
               {related.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="min-w-0">
                   <a
                     href={productPath(item.id)}
                     className="card group flex h-full items-center gap-3 p-4 transition-colors hover:border-gold/40"

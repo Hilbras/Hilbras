@@ -78,11 +78,11 @@ export function ProductsMenu({ disclosure, hover, buttonRef }: ProductsMenuProps
           <div className="card max-h-[min(38rem,calc(100vh-7rem))] overflow-y-auto overscroll-contain p-2">
             <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5">
               {areas.map((area) => (
-                <li key={area.id} className="px-2 py-2">
+                <li key={area.id} className="min-w-0 px-2 py-2">
                   <p className="mono-label">{area.name}</p>
                   <ul className="mt-1.5 space-y-0.5">
                     {productsInArea(area.id).map((product) => (
-                      <li key={`${area.id}-${product.id}`}>
+                      <li key={`${area.id}-${product.id}`} className="min-w-0">
                         <ProductLink
                           product={product}
                           className="flex items-center gap-2 rounded-md px-1.5 py-1 text-13 text-muted transition-colors hover:bg-gold-soft hover:text-gold-text"

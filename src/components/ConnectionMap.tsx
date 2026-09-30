@@ -29,7 +29,7 @@ function StageNodes({ stageId }: { stageId: StageId }) {
       {productsInStage(stageId).map((product) => {
         const area = areas.find((entry) => entry.id === product.area);
         return (
-          <li key={product.id}>
+          <li key={product.id} className="min-w-0">
             <ProductLink product={product} className="node flex h-full flex-col gap-1.5 px-3 py-3">
               <span className="flex items-center gap-2">
                 <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />

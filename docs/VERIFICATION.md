@@ -102,6 +102,64 @@ overflow in either theme, no errors.
 "Stuck reveals" counts elements left at `opacity: 0` after a full scroll — the
 failure mode a scroll-reveal implementation silently has. Zero everywhere.
 
+### The overflow bug those 320px checks missed
+
+The table above claims no horizontal overflow at 320px, and it was true of the
+*document*. It was not true of the *content*: cards were 460px wide inside a
+280px container and ran off the right edge, unreachable, at every width below
+640px. The document did not scroll, so a check for `scrollWidth > innerWidth`
+passed cleanly.
+
+Found by adding a product with a 58-character name, a 47-character slug and a
+104-character install command, and measuring element boxes rather than the
+document:
+
+```console
+320px   "Hilbras RememberaDurable memory for AI ass"  box 20→480 (w=460)
+360px   "Hilbras RememberaDurable memory for AI ass"  box 20→480 (w=460)
+414px   "Hilbras RememberaDurable memory for AI ass"  box 20→480 (w=460)
+```
+
+The cause is a CSS rule, not the content. **A grid item's automatic minimum size
+is its min-content size.** A `truncate` span is `white-space: nowrap`, so its
+min-content width is the whole unwrapped string, the track grows to fit it, and
+the card overflows the container that was supposed to hold it.
+
+`min-w-0` on the grid item sets the automatic minimum size to zero, which is what
+lets `truncate` do its job. The footer already had exactly that — which is why
+the footer was the one list that was correct and the bug was easy to believe
+wasn't there. Five other lists did not:
+
+| List | Route |
+| --- | --- |
+| related products | every product page |
+| product cards | the index |
+| connection-map nodes | the homepage |
+| navbar panel, area and product items | every route |
+
+`tests/e2e/overflow.spec.ts` now checks every route at 320, 360 and 480px for any
+element whose own box crosses the right edge, and names the offenders. It was
+verified to fail by reintroducing the bug:
+
+```console
+- Array []
++ Array [
++   "li is 167px past the right edge",
++   "a.card.group.flex is 167px past the right edge",
++   "span.min-w-0.flex-1 is 104px past the right edge",
++   "span.block.truncate.text-15 is 104px past the right edge",
++ ]
+```
+
+Three widths, thirteen routes, and it exercises the real data, so a future
+product with a long name is covered by the same assertion.
+
+A long-content fixture also confirmed the install section holds at 320px: a
+40-character scoped package name wraps, and the 104-character shell command sits
+in a horizontally scrollable `<pre>` — which is the correct treatment for a
+command, and the reason the test exempts scroll containers rather than the
+content inside them.
+
 ## Structure and semantics
 
 | Check | Result |

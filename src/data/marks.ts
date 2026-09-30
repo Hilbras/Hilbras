@@ -70,7 +70,7 @@ export const marks = {
     { shape: 'rect', x: 3, y: 3, width: 12, height: 12, rx: 2 },
     { shape: 'path', d: 'M9 9h9.75a2.25 2.25 0 0 1 2.25 2.25V18' },
   ],
-  // A scanned perimeter.
+ // A scanned perimeter.
   shield: [{ shape: 'path', d: 'M12 2.75 20 6.4v5.85c0 4.3-3.3 7.6-8 9-4.7-1.4-8-4.7-8-9V6.4Z' }]
 } as const satisfies Record<string, readonly MarkShape[]>;
 

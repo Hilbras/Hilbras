@@ -104,7 +104,23 @@ await build();
 const results = [];
 
 for (const testCase of cases) {
-  await writeFile(areasFile, testCase.mutate(original), 'utf8');
+  const mutated = testCase.mutate(original);
+
+  // A case whose mutation changed nothing has silently stopped testing anything,
+  // and would report "the validator missed a defect" for a rule that was never
+  // broken. That is the worst possible failure for a self-test, so it is called
+  // out separately: adding or renaming a product moves these anchors, and the
+  // fix is to repoint the case, not to assume the check still works.
+  if (mutated === original) {
+    results.push({
+      ...testCase,
+      outcome: 'STALE ANCHOR',
+      detail: 'the mutation changed nothing, so this case is no longer testing anything — repoint it at the current data',
+    });
+    continue;
+  }
+
+  await writeFile(areasFile, mutated, 'utf8');
   try {
     await build();
     const { stdout, stderr } = await check();
@@ -129,7 +145,8 @@ await check();
 
 console.log('\nvalidator self-test\n');
 for (const r of results) {
-  console.log(`  ${r.outcome === 'caught' ? 'PASS' : 'FAIL'}  ${r.name}`);
+  const mark = r.outcome === 'caught' ? 'PASS' : r.outcome === 'STALE ANCHOR' ? 'STALE' : 'FAIL';
+  console.log(`  ${mark}  ${r.name}`);
   if (r.outcome !== 'caught') console.log(`        ${r.detail ?? ''}`);
 }
 const failed = results.filter((r) => r.outcome !== 'caught').length;

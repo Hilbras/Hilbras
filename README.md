@@ -692,7 +692,7 @@ field.
 ```bash
 pnpm test            # 110 unit and component tests
 pnpm test:coverage   # with the thresholds enforced
-pnpm test:e2e        # 60 tests across Chromium and Firefox
+pnpm test:e2e        # 65 tests across Chromium and Firefox
 pnpm check:all       # everything
 ```
 
@@ -722,12 +722,26 @@ interaction the CSP could block passes vacuously. Covers homepage content and
 prerendered HTML, hydration, the disclosure on click, hover, Escape and focus
 return, the mobile menu, theme preference and persistence and storage failure,
 reduced motion, the skip link and focus visibility and heading order, link
-`rel`/`target`/announcements, and runtime cost.
+`rel`/`target`/announcements, runtime cost, and horizontal overflow at 320, 360
+and 480px on every route.
 
-**Self-tests** — `verify:validator.mjs` breaks the product data nine different
+That last one is worth explaining, because the obvious version of it is wrong.
+Checking `document.scrollWidth > innerWidth` passes while content runs off the
+right edge — the document does not scroll when an ancestor clips it. The test
+measures **each element's own box** and names anything crossing the viewport,
+and it exists because the product cards on a product page were 460px wide inside
+a 280px container at every width below 640px, unreachable. A grid item's
+automatic minimum size is its min-content size, and a `truncate` span inside it
+is `nowrap`, so the track grows to the width of the whole unwrapped string.
+`min-w-0` on the item is the fix; five lists needed it, and only the footer
+already had it.
+
+**Self-tests** — `verify:validator.mjs` breaks the product data twelve different
 ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts the
 built document six ways and asserts the assertions reject each. A check nobody
-has seen fail is not known to work.
+has seen fail is not known to work. The self-test also reports a case whose
+mutation changed nothing as `STALE` rather than as a pass: a rule that was never
+broken is not a rule that was caught, and the two must not look the same.
 
 Coverage is gated on `areas.ts`, `links.ts`, `url.ts` and `structuredData.ts`.
 `validation.ts` is deliberately excluded rather than the bar being lowered: its

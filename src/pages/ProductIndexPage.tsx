@@ -77,7 +77,7 @@ export function ProductIndexPage() {
                       .map((other) => other.name);
 
                     return (
-                      <li key={product.id}>
+                      <li key={product.id} className="min-w-0">
                         <a
                           href={productPath(product.id)}
                           className="card group flex h-full items-start gap-3.5 p-4 transition-colors hover:border-gold/40"
