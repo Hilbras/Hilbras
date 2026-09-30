@@ -228,13 +228,57 @@ if (site) {
       allowed.add(new URL(product.match(/'(https:[^']+)'/)[1]).origin);
     }
   }
-  for (const match of html.matchAll(/https:\/\/[a-z0-9.-]+(?:\/[^\s"'<>]*)?/gi)) {
-    const origin = new URL(match[0]).origin;
-    if (!allowed.has(origin)) {
-      failures.push(`an unexpected external origin appears in the document: ${origin}`);
-      break;
+  // The rule is one sentence: **a bare URL is a claim about where something
+  // lives; a URL inside a sentence is content.**
+  //
+  // Scanning the whole document flagged a product description that mentioned
+  // `https://example.com/?a=1&b=2` — which is not a defect, it is a developer
+  // tools product describing a query string. But the description also flows
+  // into the JSON-LD, so narrowing to attributes was not enough on its own.
+  //
+  // So every string the document publishes is examined, and only the ones that
+  // *are* a URL — the value starts with a scheme and nothing else. That covers
+  // `href`, `src`, `og:url`, `@id`, `codeRepository` and every other URL-valued
+  // field, without caring which construct it arrived in, and it cannot be
+  // defeated by moving a stray origin into prose.
+  const PROSE_KEYS = new Set(['description', 'abstract', 'text', 'body', 'name']);
+  const claimOrigins = [];
+  const consider = (value, key) => {
+    if (typeof value !== 'string') return;
+    if (key && PROSE_KEYS.has(key)) return;
+    const trimmed = value.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return;
+    try {
+      claimOrigins.push({ origin: new URL(trimmed.split(/\s+/)[0]).origin, value: trimmed });
+    } catch {
+      /* not a URL after all */
+    }
+  };
+  const walk = (node, key) => {
+    if (Array.isArray(node)) return node.forEach((entry) => walk(entry, key));
+    if (node && typeof node === 'object') {
+      for (const [childKey, child] of Object.entries(node)) walk(child, childKey);
+      return;
+    }
+    consider(node, key);
+  };
+
+  for (const match of html.matchAll(/\b(?:href|src)="([^"]*)"/g)) consider(match[1]);
+  for (const match of html.matchAll(/<meta\b[^>]*\bcontent="([^"]*)"/g)) consider(match[1]);
+  for (const block of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    try {
+      walk(JSON.parse(block[1]));
+    } catch {
+      failures.push('a JSON-LD block does not parse');
     }
   }
+
+  for (const { origin, value } of claimOrigins) {
+    if (!allowed.has(origin)) {
+      failures.push(`an unexpected external origin is published: ${origin} (${value.slice(0, 70)})`);
+    }
+  }
+
   for (const [name, content] of [['robots.txt', robots], ['sitemap.xml', sitemap]]) {
     if (!content.includes(expected)) failures.push(`${name} does not reference ${expected}`);
     if (override && expected !== site && content.includes(site)) {
@@ -367,6 +411,57 @@ for (const loc of sitemapLocs) {
   if (!routes.includes(loc)) failures.push(`the sitemap lists ${loc}, which is not a route`);
 }
 
+// --- Titles and descriptions are display slots, not fields -----------------
+//
+// A search result shows roughly 600 pixels of title and 920 of description —
+// about 60 and 160 characters of ordinary text — and truncates the rest. Text
+// past that boundary is written, shipped, indexed, and never read by anyone, so
+// an over-long description is not a longer description; it is a short one with a
+// tail nobody sees. `/products` sat at 177 characters until this was measured.
+//
+// The boundaries are pixel widths, not character counts, so they are treated as
+// what they are. Past the target it is reported; past the hard limit — where the
+// result is not merely truncated but cut mid-word — it fails the build.
+const TITLE_TARGET = 60;
+const TITLE_LIMIT = 100;
+const DESCRIPTION_TARGET = 160;
+const DESCRIPTION_LIMIT = 200;
+
+const overTarget = [];
+/**
+ * Length as a reader sees it.
+ *
+ * `&amp;` occupies one character in the title bar, not five. Measuring the raw
+ * attribute made a 67-character title look like 81, which is a measurement
+ * reporting a number nobody can act on.
+ */
+const displayedLength = (value) => value.replace(/&(?:[a-z]+|#\d+);/gi, 'x').length;
+
+for (const route of routes) {
+  const file = route === '/' ? 'dist/index.html' : `dist${route}/index.html`;
+  const document = (await read(file)).split(/\s+/).join(' ');
+
+  const title = document.match(/<title>(.*?)<\/title>/)?.[1] ?? '';
+  const description = document.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? '';
+  const titleLength = displayedLength(title);
+  const descriptionLength = displayedLength(description);
+
+  if (titleLength > TITLE_TARGET) {
+    overTarget.push(`${route} — title is ${titleLength} characters`);
+  }
+  check(
+    titleLength <= TITLE_LIMIT,
+    `${route}: title is ${titleLength} characters, past the ${TITLE_LIMIT} at which a search result cuts it mid-word`,
+  );
+  check(
+    descriptionLength <= DESCRIPTION_LIMIT,
+    `${route}: description is ${descriptionLength} characters, past the ${DESCRIPTION_LIMIT} limit`,
+  );
+  if (descriptionLength > DESCRIPTION_TARGET) {
+    overTarget.push(`${route} — description is ${descriptionLength} characters`);
+  }
+}
+
 // --- Report -----------------------------------------------------------------
 if (failures.length) {
   console.error(`build output: ${failures.length} problem(s)\n`);
@@ -379,3 +474,10 @@ console.log(
     `${visibleText.length} characters of static text, ${articles.length} articles, ` +
     `${ldBlocks.length} JSON-LD block, origin ${site}`,
 );
+if (overTarget.length) {
+  console.log(
+    `  past the display target (${TITLE_TARGET} title / ${DESCRIPTION_TARGET} description, ` +
+      `truncated in a search result):\n` +
+      overTarget.map((entry) => `    - ${entry}`).join('\n'),
+  );
+}

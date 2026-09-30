@@ -160,6 +160,66 @@ in a horizontally scrollable `<pre>` — which is the correct treatment for a
 command, and the reason the test exempts scroll containers rather than the
 content inside them.
 
+## Titles and descriptions are display slots
+
+A search result shows roughly 600 pixels of title and 920 of description — about
+60 and 160 characters of ordinary text — and truncates the rest. Text past that
+is written, shipped, indexed, and never read, so an over-long description is not
+a longer description; it is a short one with a tail nobody sees.
+
+Found by adding a product whose name contained an em dash, an ampersand and a
+pair of quotes, then measuring every route:
+
+| Route | Title | Description |
+| --- | --- | --- |
+| `/products` | 18 | **177** |
+| `/` | 33 | 158 |
+| `/products/remembera` | 27 | 149 |
+
+`/products` was over the limit **and had been all along**. Its description was
+assembled from a 60-character prefix plus the tail of the homepage description —
+two halves that each fit, producing a whole that did not.
+
+It is now written for the slot, from the data:
+
+```console
+All 11 Hilbras products, grouped by the area of technology they belong to:
+ai infrastructure, developer infrastructure, platforms, social technology,
+computing, security.
+```
+
+130 characters. And a product title drops the `— Hilbras` suffix when including
+it would push the title past the target, because a product whose name already
+carries the brand gains nothing from the suffix. `Parsewright — A Configuration &
+Markup Parsing Toolkit "for Humans" — Hilbras` (77) becomes the same without the
+suffix (67). The name itself is never truncated to fit — a product called
+something is not made shorter to score better.
+
+`assert-build-output.mjs` now reports anything past the target and **fails** past
+100 characters for a title or 200 for a description, where the result is not
+merely truncated but cut mid-word. Both boundaries are pixel widths treated as
+character counts, which is an approximation, and the code says so.
+
+### Escaping, and what a check should scan
+
+The same fixture proved the escaping is correct: a description containing
+`<config>`, `&amp;`, `"quoted"` and `https://example.com/?a=1&b=2` came through as
+`&lt;config&gt;`, `&amp;`, `&quot;` and an intact URL, in the attributes *and* in
+the JSON-LD, and the JSON-LD still parsed.
+
+It also found the external-origin check was **over-broad**. It scanned the whole
+document for URLs, so a product description mentioning a query string failed the
+build. Narrowing it to attributes was not enough on its own, because the
+description also flows into the JSON-LD. The rule is now one sentence:
+
+> A bare URL is a claim about where something lives; a URL inside a sentence is
+> content.
+
+Every string the document publishes is examined, and only the ones that *are* a
+URL — the value starts with a scheme and nothing else. That covers `href`, `src`,
+`og:url`, `@id` and `codeRepository` without caring which construct delivered it,
+and cannot be defeated by hiding a stray origin in prose.
+
 ## Structure and semantics
 
 | Check | Result |

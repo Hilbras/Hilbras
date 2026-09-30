@@ -351,6 +351,12 @@ nine of eleven products. `features`, `useCases` and `integrations` are
 deliberately absent: inventing eleven products' feature lists is not something a
 website should do. They arrive the day the data supports them.
 
+Titles and meta descriptions are **display slots**. A search result shows about
+60 characters of title and 160 of description; the rest is indexed and never
+read. `assert-build-output.mjs` reports anything past that and fails past 100/200,
+where the result is cut mid-word. A product title drops the `— Hilbras` suffix
+when including it would overflow — the name itself is never truncated to fit.
+
 `developer` holds the published package name, version, licence and install
 command, and is what the **Install it** section on a product page renders. Five
 of the eleven have one; the other six have no registry package and get no
@@ -737,8 +743,11 @@ is `nowrap`, so the track grows to the width of the whole unwrapped string.
 already had it.
 
 **Self-tests** — `verify:validator.mjs` breaks the product data twelve different
-ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts the
-built document six ways and asserts the assertions reject each. A check nobody
+ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts
+the built document nine ways and asserts the assertions reject each — including
+one that asserts a check **stays quiet**: a URL in a sentence is content, not a
+claim about where something lives, and a check that fired at everything would
+otherwise pass every positive case and score full marks. A check nobody
 has seen fail is not known to work. The self-test also reports a case whose
 mutation changed nothing as `STALE` rather than as a pass: a rule that was never
 broken is not a rule that was caught, and the two must not look the same.

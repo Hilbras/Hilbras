@@ -49,6 +49,36 @@ const cases = [
     mutate: (html) => html.replace('<h3 class="text-lg font-semibold', '<h4 class="text-lg font-semibold'),
   },
   {
+    // A product with a very long name pushes its title past what a search
+    // result shows. The template drops the brand suffix, which helps, but it
+    // will not mangle a name to fit — so the assertion has to be the thing that
+    // reports it.
+    name: 'a title too long for a search result to show',
+    expect: 'past the',
+    mutate: (html) => html.replace(/<title>[\s\S]*?<\/title>/, `<title>${'Hilbras '.repeat(14)}Omniversal Distributed Infrastructure Coordination Fabric — Hilbras</title>`),
+  },
+  {
+    name: 'a description too long for a search result to show',
+    expect: 'past the',
+    mutate: (html) => html.replace(
+      /(<meta\s+name="description"\s+content=")[^"]*"/,
+      (_m, head) => `${head}${'a very long description '.repeat(12).trim()}"`,
+    ),
+  },
+  {
+    name: 'a URL in prose, which is content and not a claim',
+    // The mirror of the stale-domain case: a URL inside a sentence is content,
+    // not a claim about where something lives, and must NOT be reported.
+    // Asserting only that a check fires leaves no way to tell a strict check
+    // from a broken one that fires at everything — so this case exists.
+    expect: 'build output: ok',
+    expectPass: true,
+    // In body prose, not the meta description: the meta has its own assertions
+    // (it must match the generated one, and it has a length budget), so
+    // injecting there would trip those and this case would test something else.
+    mutate: (html) => html.replace('</main>', '<p>Read https://a.io/x?b=2 for details.</p></main>'),
+  },
+  {
     name: 'an inline script was reintroduced',
     expect: 'inline script was reintroduced',
     mutate: (html) => html.replace('<script src="/theme-init.js"></script>', '<script>console.log(1)</script>'),
@@ -58,10 +88,26 @@ const cases = [
 const results = [];
 
 for (const testCase of cases) {
-  await writeFile(target, testCase.mutate(original), 'utf8');
+  const mutated = testCase.mutate(original);
+  if (mutated === original) {
+    results.push({
+      ...testCase,
+      outcome: 'STALE ANCHOR',
+      detail: 'the mutation changed nothing, so this case is no longer testing anything',
+    });
+    continue;
+  }
+  await writeFile(target, mutated, 'utf8');
   try {
-    await run('node', ['scripts/assert-build-output.mjs'], { cwd: root });
-    results.push({ ...testCase, outcome: 'NOT CAUGHT' });
+    const { stdout, stderr } = await run('node', ['scripts/assert-build-output.mjs'], { cwd: root });
+    const output = `${stdout ?? ''}${stderr ?? ''}`;
+    // A negative case asserts the check stays quiet. Without this, a check that
+    // fired at everything would pass every positive case and score full marks.
+    results.push({
+      ...testCase,
+      outcome: testCase.expectPass ? (output.includes(testCase.expect) ? 'caught' : 'OVER-REPORTED') : 'NOT CAUGHT',
+      detail: testCase.expectPass && !output.includes(testCase.expect) ? output.trim().split('\n').filter(Boolean).slice(0, 3).join(' | ') : undefined,
+    });
   } catch (error) {
     const output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
     results.push({

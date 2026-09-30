@@ -29,11 +29,21 @@ const {
   render,
   site,
   counts,
+  areas,
   productById,
   buildRouteStructuredData,
   resolveSiteUrl,
   allRoutes,
 } = await import(ssrEntry);
+
+/**
+ * How much of a title a search result will actually show.
+ *
+ * A search engine truncates at a pixel width — roughly 600px for a title, about
+ * 60 characters of ordinary text — not at a character count, so this is an
+ * approximation and is treated as one. It is a target, not a law.
+ */
+const TITLE_TARGET = 60;
 
 const origin = resolveSiteUrl();
 const shell = await readFile(join(dist, 'index.html'), 'utf8');
@@ -47,11 +57,24 @@ const attr = (value) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-/** The document title for a route. */
+/**
+ * The document title for a route.
+ *
+ * The brand suffix is dropped when it would push the title past what a search
+ * result shows. A search engine truncates a title at roughly 600 pixels — about
+ * 60 characters — and the text beyond that is never read by anyone, so a title
+ * of 77 characters is not a long title, it is a 17-character one with a tail
+ * nobody sees. A product whose name already carries the brand gains nothing from
+ * the suffix anyway, which is the common case.
+ */
 function titleFor(route) {
-  if (route.kind === 'product') return `${productName(route)} — ${site.name}`;
-  if (route.kind === 'productIndex') return `Products — ${site.name}`;
-  if (route.kind === 'notFound') return `Not found — ${site.name}`;
+  const branded = (label) => {
+    const full = `${label} — ${site.name}`;
+    return full.length <= TITLE_TARGET ? full : label;
+  };
+  if (route.kind === 'product') return branded(productName(route));
+  if (route.kind === 'productIndex') return branded('Products');
+  if (route.kind === 'notFound') return branded('Not found');
   return `${site.name} — ${site.headline}`;
 }
 
@@ -59,7 +82,14 @@ function titleFor(route) {
 function descriptionFor(route) {
   if (route.kind === 'product') return productSummary(route);
   if (route.kind === 'productIndex') {
-    return `Every Hilbras product, by the area of technology it belongs to. ${site.description.replace(/^Hilbras is an independent technology company /, '')}`;
+    // Written for the slot rather than assembled from two halves that each fit.
+    // The previous version borrowed the tail of the homepage description and
+    // came to 177 characters, of which a search result shows about 155 — the
+    // rest was written, shipped, and never read by anyone.
+    return (
+      `All ${counts.products} Hilbras products, grouped by the area of technology they belong to: ` +
+      `${areas.map((area) => area.short.toLowerCase()).join(', ')}.`
+    );
   }
   if (route.kind === 'notFound') {
     return 'There is no page at this address. Browse every Hilbras product instead.';

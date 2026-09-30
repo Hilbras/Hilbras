@@ -2,7 +2,7 @@ import { renderToString } from 'react-dom/server';
 import { buildGraph, buildStructuredDataDocument } from './data/structuredData';
 import { validateData, formatIssues } from './data/validation';
 import { resolveSiteUrl, isDefaultOrigin } from './data/url';
-import { productById, products } from './data/areas';
+import { areas, productById, products } from './data/areas';
 import { counts, site } from './data/site';
 import { App } from './pages/App';
 import { allRoutes, productPath, resolveRoute, type Route } from './routes';
@@ -46,6 +46,7 @@ export function buildRouteStructuredData(route: Route, origin: string): string {
 
 export {
   site,
+  areas,
   productById,
   products,
   counts,
