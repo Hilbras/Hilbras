@@ -46,6 +46,10 @@ export const navLinks: readonly NavLink[] = [
   { href: '/#ecosystem', label: 'Ecosystem' },
   { href: '/#technology', label: 'Technology' },
   { href: '/#philosophy', label: 'About' },
+  // A path, not a section. The other three are homepage sections, and a section
+  // link would have to be root-relative to resolve from a product page — which
+  // is why these are `/#…` and this one is not.
+  { href: '/developers', label: 'Developers' },
 ] as const;
 
 /** The three claims the hero makes under its CTAs. */
@@ -156,6 +160,7 @@ export const footerGroups: ReadonlyArray<{ title: string; links: readonly NavLin
       { href: '/#connect', label: 'Ecosystem map' },
       { href: '/#technology', label: 'Technology areas' },
       { href: '/#built-for', label: 'Built for' },
+      { href: '/developers', label: 'For developers' },
       { href: 'https://github.com/Hilbras', label: 'GitHub' },
     ],
   },

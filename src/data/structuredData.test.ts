@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { products } from './areas';
+import { products, publishedPackages } from './areas';
 import { site } from './site';
-import { buildGraph, buildStructuredDataDocument } from './structuredData';
+import { buildDeveloperList, buildGraph, buildStructuredDataDocument } from './structuredData';
 import { validateData } from './validation';
 
 describe('structured data', () => {
@@ -153,4 +153,57 @@ describe('site configuration', () => {
     expect(site.description.length).toBeGreaterThan(60);
     expect(site.tagline.length).toBeGreaterThan(10);
   });
+
+// The developer page's graph. Its whole value is that it is derived: every node
+// comes from `product.developer`, so a package cannot be installable on its own
+// page and absent here.
+describe('the developer list', () => {
+  const origin = 'https://hilbras.example';
+  const graph = buildDeveloperList(origin);
+  const list = graph.find((n) => n['@type'] === 'ItemList')!;
+  const page = graph.find((n) => n['@type'] === 'CollectionPage')!;
+  const entries = list.itemListElement as { position: number; item: Record<string, unknown> }[];
+
+  it('describes the page and the organisation it belongs to', () => {
+    expect(page['@id']).toBe(`${origin}/developers`);
+    expect(page.url).toBe(`${origin}/developers`);
+    expect(page.isPartOf).toEqual({ '@id': `${origin}/#website` });
+    expect(graph.some((n) => n['@type'] === 'Organization')).toBe(true);
+    // The whole product graph is not repeated here: a page that is about five
+    // packages should not assert things about the six that have none.
+    expect(graph.filter((n) => String(n['@type']).startsWith('Software'))).toHaveLength(0);
+  });
+
+  it('lists exactly the packages that are published', () => {
+    expect(list.numberOfItems).toBe(publishedPackages.length);
+    expect(entries).toHaveLength(publishedPackages.length);
+    expect(entries.map((entry) => entry.position)).toEqual(
+      publishedPackages.map((_, index) => index + 1),
+    );
+  });
+
+  it('gives every entry the registry\'s own answers, and the product\'s identity', () => {
+    for (const [index, entry] of entries.entries()) {
+      const product = publishedPackages[index];
+      const developer = product.developer!;
+      // The same @id the product page publishes, so a crawler that has seen both
+      // is looking at one entity rather than two descriptions of it.
+      expect(entry.item['@id'], product.id).toBe(`${origin}/#product-${product.id}`);
+      expect(entry.item.softwareVersion, product.id).toBe(developer.version);
+      expect(entry.item.license, product.id).toBe(`https://spdx.org/licenses/${developer.license}`);
+      expect(entry.item.codeRepository, product.id).toBe(product.repository);
+      expect(entry.item.url, product.id).toBe(`${origin}/products/${product.id}`);
+      expect(entry.item.maintainer, product.id).toEqual({ '@id': `${origin}/#organization` });
+    }
+  });
+
+  it('never lists a product with no registry package', () => {
+    const ids = new Set(entries.map((entry) => String(entry.item['@id'])));
+    for (const product of products) {
+      if (product.developer) continue;
+      expect([...ids].some((id) => id.endsWith(`-${product.id}`)), product.id).toBe(false);
+    }
+  });
+});
+
 });

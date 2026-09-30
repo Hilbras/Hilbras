@@ -155,6 +155,13 @@ dist/assets/*              .ssr/entry-server.mjs
 
 Three properties this arrangement is chosen for:
 
+0. **`/developers` holds no list.** Every package on it comes from
+   `product.developer`, the same field the product pages use, so a product cannot
+   be installable on its own page and missing from the index of installable
+   things. The copy is derived too: "all under the MIT licence" comes from
+   `sharedLicence()`, which returns `null` if the licences ever differ, and the
+   reading date comes from `readWindow()`, which reports a range if two packages
+   were read on different days. A claim that cannot outlive its data.
 1. **Adding a product is a data edit.** One record in `src/data/areas.ts` plus
    the owning area's `products` array reaches the grid, the navigation, the
    footer, the connection map, the product page, the structured data, the
@@ -706,7 +713,7 @@ field.
 ```bash
 pnpm test            # 110 unit and component tests
 pnpm test:coverage   # with the thresholds enforced
-pnpm test:e2e        # 65 tests across Chromium and Firefox
+pnpm test:e2e        # 69 tests across Chromium and Firefox
 pnpm check:all       # everything
 ```
 
@@ -750,8 +757,9 @@ is `nowrap`, so the track grows to the width of the whole unwrapped string.
 `min-w-0` on the item is the fix; five lists needed it, and only the footer
 already had it.
 
-**Self-tests** — `verify:validator.mjs` breaks the product data twelve different
-ways and asserts the build rejects each. `verify-build-assertion.mjs` corrupts
+**Self-tests** — `verify:validator.mjs` breaks the data fifteen different ways,
+across `areas.ts`, `site.ts`, `stages.ts` and `marks.ts`, and asserts the build
+rejects each. `verify-build-assertion.mjs` corrupts
 the built document nine ways and asserts the assertions reject each — including
 one that asserts a check **stays quiet**: a URL in a sentence is content, not a
 claim about where something lives, and a check that fired at everything would

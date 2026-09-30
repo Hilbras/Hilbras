@@ -3,6 +3,7 @@ import { isExternalHref } from './links';
 import { markIds } from './marks';
 import { connectionStages, stageIds } from './stages';
 import { audiences, footerGroups, navLinks, principles, vision } from './site';
+import { allRoutes } from '../routes';
 
 export type Issue = {
   severity: 'error' | 'warning';
@@ -206,12 +207,32 @@ export function validateData(): Issue[] {
     // page has a `main`, so the skip link must stay on the current document.
     if (link.href === '#main') continue;
 
-    const anchor = link.href.startsWith('/#') ? link.href.slice(2) : link.href.slice(1);
-    if (!sectionIds.has(anchor)) {
-      error('dead-internal-link', `Navigation link "${link.href}" (${link.label}) has no matching section id.`);
+    // Two kinds of internal link, and they have different rules.
+    //
+    // A *section* link points into the homepage's anchors. It is written
+    // root-relative as `/#ecosystem`, because it is followed from the product
+    // pages too and a bare `#ecosystem` resolves against whatever page the
+    // reader happens to be on. On the homepage it is still same-document
+    // navigation, so nothing is lost.
+    if (link.href.startsWith('/#')) {
+      const anchor = link.href.slice(2);
+      if (!sectionIds.has(anchor)) {
+        error('dead-internal-link', `Navigation link "${link.href}" (${link.label}) has no matching section id.`);
+      }
+      continue;
     }
-    if (!link.href.startsWith('/#')) {
-      error('non-absolute-section-link', `Navigation link "${link.href}" (${link.label}) is not root-relative, so it resolves against the current page.`);
+
+    // A *page* link — `/developers` — is a document in its own right, so it has
+    // to resolve to a route rather than to an anchor. This used to be checked as
+    // if every navigation link were a section link, which is why adding a page
+    // to the navigation failed the build with "has no matching section id" —
+    // a true-sounding complaint about a link that was pointing at a real page.
+    const path = link.href.split('#')[0].replace(/\/$/, '') || '/';
+    if (!allRoutes().some((route) => route.path === path)) {
+      error('dead-internal-link', `Navigation link "${link.href}" (${link.label}) is not a route.`);
+    }
+    if (link.href.includes('#')) {
+      error('non-absolute-section-link', `Navigation link "${link.href}" (${link.label}) mixes a page and a fragment, which resolves against the current page.`);
     }
   }
 

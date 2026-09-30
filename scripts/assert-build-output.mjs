@@ -301,7 +301,10 @@ const homeSectionIds = new Set(
 
 const blocks = (await read('src/data/areas.ts')).split('export const products')[1] ?? '';
 const productIds = [...blocks.matchAll(/^    id: '([a-z0-9-]+)',$/gm)].map((m) => m[1]);
-const routes = ['/', '/products', ...productIds.map((id) => `/products/${id}`)];
+// Kept in step with `src/routes.ts`. Deriving this from the route table would be
+// better; until then, a route added there and forgotten here fails the build
+// rather than passing — which is the correct direction for this to fail in.
+const routes = ['/', '/products', '/developers', ...productIds.map((id) => `/products/${id}`)];
 
 for (const route of routes) {
   const file = route === '/' ? join(dist, 'index.html') : join(dist, route, 'index.html');

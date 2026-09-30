@@ -193,6 +193,83 @@ test.describe('the product index', () => {
   });
 });
 
+test.describe('the developer page', () => {
+  test('lists every published package with its version, licence and command', async ({ page }) => {
+    await page.goto('/developers', { waitUntil: 'load' });
+    const section = page.locator('section#packages');
+
+    // Read from the registry metadata rather than restated here, so a version
+    // bump is a data edit and this test follows it.
+    const published = products.filter((product) => product.developer);
+    expect(published.length).toBeGreaterThan(0);
+
+    for (const product of published) {
+      const developer = product.developer!;
+      await expect(section.getByText(developer.package, { exact: true }), product.id).toBeVisible();
+      await expect(
+        section.getByText(`v${developer.version} · ${developer.license}`),
+        product.id,
+      ).toBeVisible();
+      // The install command, exactly as the project's README states it.
+      await expect(section.getByText(developer.install, { exact: true }), product.id).toBeVisible();
+    }
+
+    // And no card for a product with nothing published.
+    await expect(section.locator('li > a.card')).toHaveCount(published.length);
+
+    // The reading date, stated once. A version quoted without one is a version
+    // nobody checked.
+    await expect(page.getByText(/read from the npm registry on \d{4}-\d{2}-\d{2}/)).toBeVisible();
+  });
+
+  test('states what is not published, and links each of them', async ({ page }) => {
+    await page.goto('/developers', { waitUntil: 'load' });
+    const section = page.locator('section#not-published');
+    const unpublished = products.filter((product) => !product.developer);
+    for (const product of unpublished) {
+      await expect(
+        section.locator(`a[href="/products/${product.id}"]`),
+        product.id,
+      ).toBeVisible();
+    }
+    await expect(section.locator('li > a.card')).toHaveCount(unpublished.length);
+
+    // Every product is listed on this page exactly once — in one of the two
+    // lists, and nowhere else on the page.
+    const listed = await page
+      .locator('section#packages li > a.card, section#not-published li > a.card')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')));
+    expect(new Set(listed).size).toBe(products.length);
+    expect(listed).toHaveLength(products.length);
+  });
+
+  test('publishes an ItemList of exactly the packages on npm', async ({ page }) => {
+    await page.goto('/developers', { waitUntil: 'load' });
+    const raw = await page.locator('script[type="application/ld+json"]').textContent();
+    const graph = JSON.parse(raw ?? '{}')['@graph'] as Record<string, unknown>[];
+
+    const list = graph.find((node) => node['@type'] === 'ItemList');
+    expect(list, 'no ItemList on the developer page').toBeDefined();
+    expect(list!.numberOfItems).toBe(products.filter((product) => product.developer).length);
+
+    const items = list!.itemListElement as { position: number; item: Record<string, unknown> }[];
+    expect(items.map((entry) => entry.position)).toEqual([...Array(items.length)].map((_, i) => i + 1));
+    for (const { item } of items) {
+      // The @id is the same entity the product page publishes, not a page-local fork.
+      expect(String(item['@id'])).toMatch(/#product-[a-z-]+$/);
+      expect(String(item.softwareVersion)).toMatch(/^\d+\.\d+\.\d+/);
+      expect(String(item.license)).toContain('spdx.org');
+    }
+  });
+
+  test('is reachable from the navigation on a product page', async ({ page }) => {
+    await page.goto('/products/sdk', { waitUntil: 'load' });
+    await page.getByRole('link', { name: 'Developers' }).first().click();
+    await expect(page).toHaveURL(/\/developers$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Install something' })).toBeVisible();
+  });
+});
+
 test.describe('the 404 page', () => {
   test('serves a real 404 with a way back', async ({ page }) => {
     const response = await page.goto('/products/ghostware', { waitUntil: 'load' });

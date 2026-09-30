@@ -30,6 +30,11 @@ const {
   site,
   counts,
   areas,
+  publishedPackages,
+  sourceOnlyProducts,
+  registryLicence,
+  spell,
+  sentence,
   productById,
   buildRouteStructuredData,
   resolveSiteUrl,
@@ -74,6 +79,7 @@ function titleFor(route) {
   };
   if (route.kind === 'product') return branded(productName(route));
   if (route.kind === 'productIndex') return branded('Products');
+  if (route.kind === 'developers') return branded('For developers');
   if (route.kind === 'notFound') return branded('Not found');
   return `${site.name} — ${site.headline}`;
 }
@@ -89,6 +95,15 @@ function descriptionFor(route) {
     return (
       `All ${counts.products} Hilbras products, grouped by the area of technology they belong to: ` +
       `${areas.map((area) => area.short.toLowerCase()).join(', ')}.`
+    );
+  }
+  if (route.kind === 'developers') {
+    // "all under the MIT licence" is emitted only when every published package
+    // actually shares one licence, so the sentence cannot outlive the data.
+    const licence = registryLicence ? `, all ${registryLicence}` : '';
+    return (
+      `${sentence(publishedPackages.length)} Hilbras products on npm${licence}, each usable on its own — ` +
+      'package name, version and install command, with the date each was read.'
     );
   }
   if (route.kind === 'notFound') {

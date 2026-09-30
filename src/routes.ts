@@ -21,11 +21,13 @@ import { productById, products } from './data/areas';
 export type Route =
   | { kind: 'home'; path: string }
   | { kind: 'productIndex'; path: string }
+  | { kind: 'developers'; path: string }
   | { kind: 'product'; path: string; id: string }
   | { kind: 'notFound'; path: string };
 
 export const HOME_PATH = '/';
 export const PRODUCTS_PATH = '/products';
+export const DEVELOPERS_PATH = '/developers';
 
 const PRODUCT_PATH = /^\/products\/([a-z0-9][a-z0-9-]*)\/?$/;
 
@@ -51,6 +53,7 @@ export function resolveRoute(pathname: string): Route {
 
   if (path === HOME_PATH) return { kind: 'home', path: HOME_PATH };
   if (path === PRODUCTS_PATH) return { kind: 'productIndex', path: PRODUCTS_PATH };
+  if (path === DEVELOPERS_PATH) return { kind: 'developers', path: DEVELOPERS_PATH };
 
   const match = path.match(PRODUCT_PATH);
   if (match) {
@@ -73,6 +76,7 @@ export function allRoutes(): Route[] {
   return [
     { kind: 'home', path: HOME_PATH },
     { kind: 'productIndex', path: PRODUCTS_PATH },
+    { kind: 'developers', path: DEVELOPERS_PATH },
     ...products.map((product) => ({
       kind: 'product' as const,
       path: productPath(product.id),

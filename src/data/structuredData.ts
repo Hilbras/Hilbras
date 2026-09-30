@@ -1,4 +1,5 @@
-import { areas, products, productSchemas, type Product } from './areas';
+import { areas, products, productSchemas, publishedPackages, type Product } from './areas';
+import { productPath } from '../routes';
 import { site } from './site';
 import { resolveSiteUrl } from './url';
 
@@ -112,4 +113,62 @@ function areasFor(product: Product): string[] {
  */
 export function buildStructuredDataDocument(origin: string = resolveSiteUrl()): string {
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': buildGraph(origin) });
+}
+
+/**
+ * The developer page's graph: the organisation, the website, the collection
+ * page itself, and an `ItemList` of the published packages.
+ *
+ * Each package reuses the `@id` its product page publishes, so a crawler that
+ * has seen both pages is looking at the same entity rather than two descriptions
+ * of it. The `@id`s are the join; inventing page-local ones would silently fork
+ * the entity.
+ *
+ * Only packages that are actually published appear. Listing a product with no
+ * registry entry in a list of things to install would be a claim the data does
+ * not support — and the version and licence are the registry's own answers, not
+ * a summary someone wrote.
+ */
+export function buildDeveloperList(origin: string = resolveSiteUrl()): JsonNode[] {
+  const page: JsonNode = {
+    '@type': 'CollectionPage',
+    '@id': `${origin}/developers`,
+    url: `${origin}/developers`,
+    name: `For developers — ${site.name}`,
+    description: site.description,
+    inLanguage: 'en',
+    isPartOf: { '@id': `${origin}/#website` },
+  };
+
+  const items: JsonNode[] = publishedPackages.map((product, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    item: {
+      '@type': 'SoftwareSourceCode',
+      '@id': `${origin}/#product-${product.id}`,
+      name: product.name,
+      description: product.description,
+      softwareVersion: product.developer!.version,
+      license: `https://spdx.org/licenses/${product.developer!.license}`,
+      codeRepository: product.repository,
+      url: `${origin}${productPath(product.id)}`,
+      maintainer: { '@id': `${origin}/#organization` },
+    },
+  }));
+
+  const list: JsonNode = {
+    '@type': 'ItemList',
+    '@id': `${origin}/developers#packages`,
+    name: 'Published Hilbras packages',
+    numberOfItems: items.length,
+    itemListElement: items,
+  };
+
+  page.mainEntity = list;
+
+  return [
+    ...buildGraph(origin).filter((node) => node['@type'] === 'Organization' || node['@type'] === 'WebSite'),
+    page,
+    list,
+  ];
 }

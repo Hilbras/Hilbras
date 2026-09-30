@@ -296,6 +296,98 @@ roughly 30–40 kB, which is unremarkable — but it is a doubling, it is linear
 the product count, and nobody should be surprised by it. The product pages do not
 grow, because a product page describes one product.
 
+## The developer page
+
+`/developers` answers a question the product pages cannot: *what can I install?*
+Every product page carries an **Install it** section, which answers "how do I use
+*this*", but getting the full answer meant visiting five pages one at a time and
+knowing in advance which five.
+
+It holds **no list of its own.** Every package on it comes from
+`product.developer`, so a product cannot be installable on its own page and
+missing from the index of installable things — the failure that only appears once
+somebody publishes something. `publishedPackages` is a view over `products`, and
+a test asserts that identity rather than restating the list:
+
+```tsx
+expect(publishedPackages.length).toBe(products.filter((product) => product.developer).length);
+```
+
+### What the copy is allowed to assert
+
+Two sentences on the page are derived rather than written, because a version
+quoted without a date is a small lie and a licence claimed by habit is a lie
+waiting to happen.
+
+**"All under the MIT licence"** comes from `sharedLicence()`, which returns the
+shared licence or `null`. The day a package is published under something else,
+the sentence disappears by itself instead of the page quietly becoming false.
+
+**"Every version below was read from the npm registry on 2026-09-30"** comes from
+`readWindow()`, which reports a range and sets `uniform: false` if two packages
+were read on different days. Stated once for the list rather than five times
+under five cards — five identical dates is noise, and the question a reader has
+is "how stale is this?", which one date answers.
+
+Both are **functions taking a list**, not constants computed from frozen data.
+As constants, their "they differ" and "nothing published" branches could never
+execute — dead code that looks alive, which is worse than no branch. The
+`areas.ts` coverage gate is at 100%, which is what made that visible.
+
+### My own test caught a false claim
+
+The page's first draft said the versions were dated on the page. The test
+asserting it failed, because the cards showed version and licence and no date —
+the doc comment described an intention, not the code. The date is now stated, from
+the data.
+
+### A validator rule that was too narrow
+
+Adding a page link to the navigation failed the build:
+
+```
+error [dead-internal-link] Navigation link "/developers" has no matching section id.
+error [non-absolute-section-link] … is not root-relative, so it resolves against the current page.
+```
+
+Both are **true statements about the wrong kind of link.** The rule assumed every
+navigation link is a homepage section anchor, which was true until this page
+existed. It now distinguishes the two: a `/#anchor` link must name a real section
+and be root-relative; a `/path` link must resolve to a route. The message changed
+too — "is not a route" rather than a true-sounding complaint about a section id.
+
+### The self-test could not reach half the validator
+
+`verify-validator.mjs` mutated exactly one file, `src/data/areas.ts`, so every
+rule the validator enforces over `site.ts` had **no self-test at all** — dead
+navigation links, missing vision stages, a non-root-relative section link. The
+harness now takes a per-case `file` and restores all four data files, and the
+three `site.ts` rules have cases. **15/15**, up from 12.
+
+Adding a page also meant adding it to two hand-maintained route lists — the build
+assertion and the smoke test. That is a place a new page ships unverified, so both
+now say so in a comment, and the build assertion fails if a route is in the
+sitemap but not in its list.
+
+### Structured data
+
+`CollectionPage` + `ItemList`, with `numberOfItems` and one `ListItem` per
+package, positions 1..n:
+
+| Node | `@id` |
+| --- | --- |
+| `Organization` | `{origin}/#organization` |
+| `WebSite` | `{origin}/#website` |
+| `CollectionPage` | `{origin}/developers` |
+| `ItemList` | `{origin}/developers#packages` |
+
+Each entry is a `SoftwareSourceCode` carrying the registry's own `softwareVersion`
+and SPDX `license`, and reusing **the same `@id` the product page publishes** — so
+a crawler that has seen both pages is looking at one entity rather than two
+descriptions of it. Page-local ids would silently fork it. The full product graph
+is not repeated here: a page about five packages should not assert things about
+the six that have none.
+
 ## Structure and semantics
 
 | Check | Result |

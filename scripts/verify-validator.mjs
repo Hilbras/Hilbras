@@ -16,8 +16,22 @@ import { dirname, join } from 'node:path';
 
 const run = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const areasFile = join(root, 'src', 'data', 'areas.ts');
-const original = await readFile(areasFile, 'utf8');
+const dataFile = (name) => join(root, 'src', 'data', `${name}.ts`);
+
+/**
+ * The files a case may break, and their committed contents.
+ *
+ * This used to be a single hardcoded `areas.ts`, which meant every rule the
+ * validator enforces over `site.ts` — dead navigation links, missing vision
+ * stages, an empty audience list — had no self-test at all. A rule nobody has
+ * seen reject anything is a rule nobody trusts, and that applies to the whole
+ * validator, not just the part that reads the product registry.
+ */
+const FILES = ['areas', 'site', 'stages', 'marks'];
+const originals = new Map();
+for (const name of FILES) originals.set(name, await readFile(dataFile(name), 'utf8'));
+
+const areasFile = dataFile('areas');
 
 /** Each case breaks the data in one specific way. */
 const cases = [
@@ -88,6 +102,27 @@ const cases = [
     mutate: (s) => s.replace("    mark: 'terminal',", "    mark: 'branches',"),
   },
   {
+    // A navigation link to a page that does not exist. Before the rule was
+    // widened this reported "has no matching section id", which is a
+    // true-sounding complaint about a link that was pointing at a real page.
+    name: 'navigation link to a page that does not exist',
+    file: 'site',
+    expect: 'is not a route',
+    mutate: (s) => s.replace("{ href: '/developers', label: 'Developers' },", "{ href: '/nowhere', label: 'Developers' },"),
+  },
+  {
+    name: 'a section link with no matching section',
+    file: 'site',
+    expect: 'has no matching section id',
+    mutate: (s) => s.replace("{ href: '/#ecosystem', label: 'Ecosystem' }", "{ href: '/#nowhere', label: 'Ecosystem' }"),
+  },
+  {
+    name: 'a section link that is not root-relative',
+    file: 'site',
+    expect: 'resolves against the current page',
+    mutate: (s) => s.replace("{ href: '/#ecosystem', label: 'Ecosystem' }", "{ href: '#ecosystem', label: 'Ecosystem' }"),
+  },
+  {
     name: 'summary identical to description',
     expect: 'redundant-summary',
     mutate: (s) => s.replace(
@@ -104,6 +139,9 @@ await build();
 const results = [];
 
 for (const testCase of cases) {
+  const file = testCase.file ?? 'areas';
+  const original = originals.get(file);
+  const target = dataFile(file);
   const mutated = testCase.mutate(original);
 
   // A case whose mutation changed nothing has silently stopped testing anything,
@@ -120,7 +158,7 @@ for (const testCase of cases) {
     continue;
   }
 
-  await writeFile(areasFile, mutated, 'utf8');
+  await writeFile(target, mutated, 'utf8');
   try {
     await build();
     const { stdout, stderr } = await check();
@@ -135,11 +173,11 @@ for (const testCase of cases) {
     const caught = output.includes(testCase.expect);
     results.push({ ...testCase, outcome: caught ? 'caught' : `caught, but not as ${testCase.expect}`, detail: output.trim().split('\n').find((l) => l.includes(testCase.expect)) ?? output.trim().split('\n').slice(-1)[0] });
   } finally {
-    await writeFile(areasFile, original, 'utf8');
+    await writeFile(target, original, 'utf8');
   }
 }
 
-await writeFile(areasFile, original, 'utf8');
+for (const name of FILES) await writeFile(dataFile(name), originals.get(name), 'utf8');
 await build();
 await check();
 

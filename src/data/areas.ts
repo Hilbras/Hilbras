@@ -354,6 +354,79 @@ export function productsInArea(areaId: AreaId): readonly Product[] {
   return area.products.map((id) => productById.get(id)).filter((product): product is Product => Boolean(product));
 }
 
+/**
+ * The products that are on a package registry, in a stable order.
+ *
+ * This is a view over `products`, not a second list. A product becomes
+ * installable by gaining a `developer` block, and it then appears here, on its
+ * own page, and in the developer page's structured data with no second edit —
+ * which is the property `docs/ADDING_A_PRODUCT.md` claims, and this is where it
+ * is exercised.
+ *
+ * Sorted by package name rather than by file order so the list is predictable to
+ * scan, and so a product's position does not depend on an unrelated product
+ * being added elsewhere in the file.
+ */
+export const publishedPackages: readonly Product[] = products
+  .filter((product) => product.developer)
+  .slice()
+  .sort((a, b) => a.developer!.package.localeCompare(b.developer!.package));
+
+/**
+ * The products with no registry package.
+ *
+ * Published on the developer page deliberately, as a stated fact rather than an
+ * omission. A developer looking for something to install should be able to see
+ * that the other products have nothing published, instead of wondering whether
+ * the page simply forgot them.
+ */
+export const sourceOnlyProducts: readonly Product[] = products.filter((product) => !product.developer);
+
+/**
+ * The one licence every package in the list shares, or null if they do not share one.
+ *
+ * The developer page says "all under the MIT licence", and that sentence has to
+ * be a fact rather than a habit. Deriving it means the claim disappears by itself
+ * the day a package is published under something else, instead of the page
+ * quietly becoming a lie.
+ *
+ * A function rather than a constant, so the "they differ" branch is reachable and
+ * tested. Computed from frozen data that branch is dead code that looks alive,
+ * which is worse than no branch at all.
+ */
+export function sharedLicence(list: readonly Product[]): string | null {
+  const licences = new Set(
+    list.map((product) => product.developer?.license).filter((value): value is string => Boolean(value)),
+  );
+  return licences.size === 1 ? [...licences][0] : null;
+}
+
+/**
+ * When the versions in the list were last read from their registries.
+ *
+ * Stated once on the page rather than once per card: five identical dates is
+ * noise carrying no information, and the useful question is "how stale is the
+ * newest thing here?", which one date answers. The range is kept so that if two
+ * packages are ever read on different days the page says so, rather than quietly
+ * asserting the earlier date for both.
+ */
+export function readWindow(
+  list: readonly Product[],
+): { earliest: string; latest: string; uniform: boolean } | null {
+  if (list.length === 0) return null;
+  const dates = list
+    .map((product) => product.developer?.verified)
+    .filter((value): value is string => Boolean(value))
+    .sort();
+  if (dates.length === 0) return null;
+  const earliest = dates[0];
+  const latest = dates[dates.length - 1];
+  return { earliest, latest, uniform: earliest === latest };
+}
+
+export const registryLicence = sharedLicence(publishedPackages);
+export const registryRead = readWindow(publishedPackages);
+
 export const statusLabels: Record<ProductStatus, string> = {
   stable: 'Stable',
   beta: 'Beta',

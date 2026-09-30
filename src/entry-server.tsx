@@ -1,9 +1,9 @@
 import { renderToString } from 'react-dom/server';
-import { buildGraph, buildStructuredDataDocument } from './data/structuredData';
+import { buildDeveloperList, buildGraph, buildStructuredDataDocument } from './data/structuredData';
 import { validateData, formatIssues } from './data/validation';
 import { resolveSiteUrl, isDefaultOrigin } from './data/url';
-import { areas, productById, products } from './data/areas';
-import { counts, site } from './data/site';
+import { areas, productById, products, publishedPackages, sourceOnlyProducts, registryLicence } from './data/areas';
+import { counts, site, sentence, spell } from './data/site';
 import { App } from './pages/App';
 import { allRoutes, productPath, resolveRoute, type Route } from './routes';
 
@@ -34,6 +34,9 @@ export function render(path = '/'): string {
  * structured data assert things about products it is not about.
  */
 export function buildRouteStructuredData(route: Route, origin: string): string {
+  if (route.kind === 'developers') {
+    return JSON.stringify({ '@context': 'https://schema.org', '@graph': buildDeveloperList(origin) });
+  }
   if (route.kind !== 'product') return buildStructuredDataDocument(origin);
 
   const own = `${origin}/#product-${route.id}`;
@@ -49,7 +52,12 @@ export {
   areas,
   productById,
   products,
+  publishedPackages,
+  sourceOnlyProducts,
+  registryLicence,
   counts,
+  spell,
+  sentence,
   buildStructuredDataDocument,
   buildGraph,
   validateData,

@@ -181,7 +181,12 @@ for (const origin of [configuredDomain, expectedOrigin, base]) {
  */
 const productBlock = areasSource.slice(areasSource.indexOf('export const products'));
 const productSlugs = [...productBlock.matchAll(/^    id: '([a-z0-9-]+)',$/gm)].map((m) => m[1]);
-const routes = ['/', '/products', ...productSlugs.map((slug) => `/products/${slug}`)];
+// Product routes are read from the registry. The two pages that are not products
+// are named here, which is a place a new page can be forgotten — so the build
+// assertion and the browser suite both check the sitemap against this list, and
+// a page added to `routes.ts` but not here fails the build rather than shipping
+// unverified.
+const routes = ['/', '/products', '/developers', ...productSlugs.map((slug) => `/products/${slug}`)];
 for (const source of [siteSource, areasSource]) {
   for (const match of source.matchAll(/href: '(https:[^']+)'/g)) {
     try { allowedOrigins.add(new URL(match[1]).origin); } catch { /* not a URL */ }

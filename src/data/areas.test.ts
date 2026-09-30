@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { Product } from './areas';
 import { markIds } from './marks';
 import { connectionStages, stageIds } from './stages';
 import {
   areas,
   productById,
+  readWindow,
+  sharedLicence,
   products,
   productsInArea,
   productSchemas,
@@ -175,6 +178,47 @@ describe('area mapping', () => {
         `the "${stage.id}" band is empty`,
       ).toBe(true);
     }
+  });
+
+  // These two derivations drive real copy — "all under the MIT licence" and the
+  // date the versions were read. Both are functions rather than constants so the
+  // branches that current data never takes are still reachable and tested; a
+  // branch that cannot execute is one nobody knows works.
+  describe('the developer-page derivations', () => {
+    const pkg = (name: string, license: string, verified: string) =>
+      ({
+        id: name,
+        developer: { package: name, version: '1.0.0', install: `npm i ${name}`, license, verified },
+      }) as unknown as Product;
+
+    it('reports a shared licence when there is exactly one', () => {
+      expect(sharedLicence([pkg('a', 'MIT', '2026-01-01'), pkg('b', 'MIT', '2026-01-01')])).toBe('MIT');
+    });
+
+    it('reports no licence when they differ, or when there is nothing published', () => {
+      // The sentence "all under the MIT licence" must disappear by itself rather
+      // than survive the day a package is published under something else.
+      expect(sharedLicence([pkg('a', 'MIT', '2026-01-01'), pkg('b', 'Apache-2.0', '2026-01-01')])).toBeNull();
+      expect(sharedLicence([])).toBeNull();
+      expect(sharedLicence([{ id: 'x' } as unknown as Product])).toBeNull();
+    });
+
+    it('reports one date when every version was read on the same day', () => {
+      const window = readWindow([pkg('a', 'MIT', '2026-09-30'), pkg('b', 'MIT', '2026-09-30')]);
+      expect(window).toEqual({ earliest: '2026-09-30', latest: '2026-09-30', uniform: true });
+    });
+
+    it('reports a range when they were read on different days', () => {
+      // Claiming one date for two versions read a fortnight apart would be a
+      // claim the data does not support.
+      const window = readWindow([pkg('a', 'MIT', '2026-10-14'), pkg('b', 'MIT', '2026-09-30')]);
+      expect(window).toEqual({ earliest: '2026-09-30', latest: '2026-10-14', uniform: false });
+    });
+
+    it('reports nothing when there is nothing published', () => {
+      expect(readWindow([])).toBeNull();
+      expect(readWindow([{ id: 'x' } as unknown as Product])).toBeNull();
+    });
   });
 
 });

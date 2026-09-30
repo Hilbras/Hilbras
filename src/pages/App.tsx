@@ -2,6 +2,7 @@ import { Footer } from '../components/Footer';
 import { Navbar } from '../components/navbar/Navbar';
 import { ParticleField } from '../components/ParticleField';
 import { productById } from '../data/areas';
+import { DevelopersPage } from './DevelopersPage';
 import { HomePage } from './HomePage';
 import { NotFoundPage } from './NotFoundPage';
 import { ProductIndexPage } from './ProductIndexPage';
@@ -38,6 +39,7 @@ export function App({ path }: { path: string }) {
       <main id="main" tabIndex={-1}>
         {route.kind === 'product' && product ? <ProductPage product={product} /> : null}
         {route.kind === 'productIndex' ? <ProductIndexPage /> : null}
+        {route.kind === 'developers' ? <DevelopersPage /> : null}
         {route.kind === 'home' ? <HomePage /> : null}
         {route.kind === 'notFound' || (route.kind === 'product' && !product) ? (
           <NotFoundPage path={route.path} />
