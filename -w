@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0c0b09" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)" />
+
+    <title>Not found — Hilbras</title>
+    <meta
+      name="description"
+      content="Hilbras is an independent technology company building AI infrastructure, developer tools, application platforms, computing environments, and security tooling."
+    />
+    <link rel="canonical" href="https://hilbras.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hilbras" />
+    <meta property="og:url" content="https://hilbras.vercel.app/" />
+    <meta property="og:title" content="Hilbras — Build. Connect. Create." />
+    <meta
+      property="og:description"
+      content="Hilbras is an independent technology company building AI infrastructure, developer tools, application platforms, computing environments, and security tooling."
+    />
+    <meta property="og:image" content="https://hilbras.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Hilbras — a technology ecosystem of independent products." />
+    <meta property="og:locale" content="en" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hilbras — Build. Connect. Create." />
+    <meta
+      name="twitter:description"
+      content="Hilbras is an independent technology company building AI infrastructure, developer tools, application platforms, computing environments, and security tooling."
+    />
+    <meta name="twitter:image" content="https://hilbras.vercel.app/og.png" />
+    <meta name="twitter:image:alt" content="Hilbras — a technology ecosystem of independent products." />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- Generated at build time from site.domain; see scripts/generate-seo.mjs. -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Fonts are self-hosted (see src/index.css). The two latin subsets that
+         paint the hero are preloaded; the rest arrive with the stylesheet. -->
+    <link
+      rel="preload"
+      href="/fonts/geist-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/geist-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+
+    <!-- Applies the stored theme before first paint. External rather than inline
+         so the Content Security Policy needs no nonce or hash. -->
+    <script src="/theme-init.js"></script>
+    <script type="module" crossorigin src="/assets/index-BR4Cvylw.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-SvVA8-bm.css">
+      <meta name="robots" content="noindex, follow" />
+  </head>
+  <body>
+    <div id="root"><div class="min-h-screen overflow-x-clip"><canvas class="particle-canvas" aria-hidden="true"></canvas><header class="nav-blur sticky top-0 z-50 border-b border-line/70"><nav class="shell relative flex h-16 items-center gap-6" aria-label="Main"><a href="#main" class="skip-link btn-gold">Skip to content</a><a href="#main" class="flex shrink-0 items-center gap-2.5 rounded-lg text-15 font-semibold tracking-tight"><svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-gold" aria-hidden="true" focusable="false"><path d="M12 2 17 8.5 12 22 7 8.5 12 2Z" fill="currentColor"></path><path d="M12 2 14 9.5 12 22 10 9.5 12 2Z" fill="currentColor" opacity="0.55"></path></svg><span>Hilbras</span></a><div class="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 lg:flex"><div class="relative"><button type="button" class="nav-link inline-flex items-center gap-1" aria-expanded="false" aria-controls="_R_ba_">Products<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down h-3.5 w-3.5 transition-transform duration-200" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div><a href="/#ecosystem" class="nav-link">Ecosystem</a><a href="/#technology" class="nav-link">Technology</a><a href="/#philosophy" class="nav-link">About</a></div><div class="ml-auto flex items-center gap-2.5"><a href="https://github.com/Hilbras" class="btn-quiet hidden xl:inline-flex" target="_blank" rel="noreferrer noopener">GitHub<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right h-3.5 w-3.5" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg><span class="sr-only">(opens in a new tab)</span></a><a href="/#start" class="btn-gold hidden sm:inline-flex">Get started<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right h-4 w-4" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></a><button type="button" aria-label="Toggle colour theme" title="Toggle colour theme" class="theme-toggle relative grid h-9 w-9 place-items-center rounded-full"><span class="theme-icon grid place-items-center"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" class="theme-icon-light h-4 w-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path><path d="m20 2 1.1 1.9L23 5l-1.9 1.1L20 8l-1.1-1.9L17 5l1.9-1.1L20 2Z"></path></svg><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" class="theme-icon-dark h-4 w-4"><circle cx="12" cy="12" r="3.6"></circle><path d="m12 1.6 1.6 3L12 7.6l-1.6-3 1.6-3Z"></path><path d="m12 16.4 1.6 3-1.6 3-1.6-3 1.6-3Z"></path><path d="m1.6 12 3-1.6 3 1.6-3 1.6-3-1.6Z"></path><path d="m16.4 12 3-1.6 3 1.6-3 1.6-3-1.6Z"></path></svg></span></button><button type="button" aria-label="Open navigation menu" aria-expanded="false" class="muted grid h-9 w-9 place-items-center rounded-lg transition-colors hover:bg-bg-soft hover:text-gold-text lg:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></button></div></nav></header><main id="main" tabindex="-1"><section aria-labelledby="notfound-heading" class="relative overflow-hidden border-b border-line/70"><div aria-hidden="true" class="bg-glow absolute inset-x-0 top-0 h-[420px] opacity-60"></div><div class="shell relative pb-16 pt-20 sm:pb-24 sm:pt-28"><div class="reveal reveal-item text-center"><p class="mono-label">404</p><h1 id="notfound-heading" class="display-title mt-5 text-4xl sm:text-5xl">Nothing here.</h1><p class="muted mx-auto mt-5 max-w-xl text-base leading-relaxed">There is no page at <code class="mono-label">/404</code>. It may have moved, or the link may be out of date.</p><div class="mt-8 flex flex-wrap items-center justify-center gap-3"><a href="/" class="btn-gold">Back to the homepage</a><a href="/products" class="btn-ghost">All products</a></div></div><div class="reveal reveal-item mx-auto mt-16 max-w-3xl"><h2 class="mono-label text-center">Every product</h2><ul class="mt-5 flex flex-wrap justify-center gap-2"><li><a href="/products/sdk" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras SDK</a></li><li><a href="/products/remembera" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Remembera</a></li><li><a href="/products/keystone" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Keystone</a></li><li><a href="/products/hilpress" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">HilPress</a></li><li><a href="/products/studio" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Studio</a></li><li><a href="/products/gateway" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Gateway</a></li><li><a href="/products/omnihilbras" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">OmniHilbras</a></li><li><a href="/products/os" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras OS</a></li><li><a href="/products/code" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Code</a></li><li><a href="/products/hilgit" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">HilGit</a></li><li><a href="/products/spectra" class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-13 text-muted transition-colors hover:border-gold/40 hover:text-gold-text">Hilbras Spectra</a></li></ul></div></div></section></main><footer class="relative border-t border-line"><div class="shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.1fr_1.5fr_0.8fr_0.8fr]"><div><a href="#main" class="flex items-center gap-2.5 text-15 font-semibold tracking-tight"><svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-gold" aria-hidden="true" focusable="false"><path d="M12 2 17 8.5 12 22 7 8.5 12 2Z" fill="currentColor"></path><path d="M12 2 14 9.5 12 22 10 9.5 12 2Z" fill="currentColor" opacity="0.55"></path></svg><span>Hilbras</span></a><p class="muted mt-3 max-w-[26ch] text-13 leading-relaxed">Technology for building what comes next.</p><a href="/#start" class="btn-gold mt-5 !px-3.5 !py-2 !text-13">Get started</a></div><nav aria-labelledby="footer-products"><h2 id="footer-products" class="mono-label">Products</h2><ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-13"><li class="min-w-0"><a href="/products/sdk" class="footer-link block truncate">Hilbras SDK</a><span class="muted block truncate text-11">AI</span></li><li class="min-w-0"><a href="/products/remembera" class="footer-link block truncate">Hilbras Remembera</a><span class="muted block truncate text-11">AI</span></li><li class="min-w-0"><a href="/products/keystone" class="footer-link block truncate">Hilbras Keystone</a><span class="muted block truncate text-11">Developers</span></li><li class="min-w-0"><a href="/products/hilpress" class="footer-link block truncate">HilPress</a><span class="muted block truncate text-11">Platforms</span></li><li class="min-w-0"><a href="/products/studio" class="footer-link block truncate">Hilbras Studio</a><span class="muted block truncate text-11">Platforms</span></li><li class="min-w-0"><a href="/products/gateway" class="footer-link block truncate">Hilbras Gateway</a><span class="muted block truncate text-11">AI</span></li><li class="min-w-0"><a href="/products/omnihilbras" class="footer-link block truncate">OmniHilbras</a><span class="muted block truncate text-11">AI</span></li><li class="min-w-0"><a href="/products/os" class="footer-link block truncate">Hilbras OS</a><span class="muted block truncate text-11">Computing</span></li><li class="min-w-0"><a href="/products/code" class="footer-link block truncate">Hilbras Code</a><span class="muted block truncate text-11">Developers</span></li><li class="min-w-0"><a href="/products/hilgit" class="footer-link block truncate">HilGit</a><span class="muted block truncate text-11">Social</span></li><li class="min-w-0"><a href="/products/spectra" class="footer-link block truncate">Hilbras Spectra</a><span class="muted block truncate text-11">Security</span></li></ul></nav><nav aria-labelledby="footer-Resources"><h2 id="footer-Resources" class="mono-label">Resources</h2><ul class="mt-4 space-y-2.5 text-sm"><li><a href="/#ecosystem" class="footer-link">Ecosystem</a></li><li><a href="/#connect" class="footer-link">Ecosystem map</a></li><li><a href="/#technology" class="footer-link">Technology areas</a></li><li><a href="/#built-for" class="footer-link">Built for</a></li><li><a href="https://github.com/Hilbras" class="footer-link" rel="noreferrer noopener" target="_blank">GitHub<span class="sr-only"> (opens in a new tab)</span></a></li></ul></nav><nav aria-labelledby="footer-Company"><h2 id="footer-Company" class="mono-label">Company</h2><ul class="mt-4 space-y-2.5 text-sm"><li><a href="/#about" class="footer-link">About</a></li><li><a href="/#philosophy" class="footer-link">Philosophy</a></li><li><a href="/#vision" class="footer-link">Vision</a></li></ul></nav></div><div class="border-t border-line"><div class="shell flex flex-col items-center justify-between gap-2 py-5 text-xs sm:flex-row"><span class="muted">© <!-- -->2026<!-- --> <!-- -->Hilbras<!-- -->. All rights reserved.</span><span class="muted font-mono">An ecosystem, not a monolith.</span></div></div></footer></div></div>
+    <noscript>
+      <div class="noscript-fallback">
+        <h1>Hilbras — Build. Connect. Create.</h1>
+        <p>
+          Hilbras is an independent technology company building software infrastructure, developer tools, AI
+          systems, digital platforms, computing environments, and security tooling. The Hilbras ecosystem covers
+          AI infrastructure, developer infrastructure, platforms, social technology, computing, and security.
+        </p>
+        <p>
+          This homepage needs JavaScript. The projects themselves are listed on
+          <a href="https://github.com/Hilbras">github.com/Hilbras</a>.
+        </p>
+      </div>
+    </noscript>
+  </body>
+</html>

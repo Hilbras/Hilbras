@@ -387,25 +387,48 @@ infer whether `Alpha` means production-ready.
 
 ### Environments
 
-`site.domain` in `src/data/site.ts` is the committed default. `SITE_URL`
-overrides it at build time, resolved through one function in `src/data/url.ts` so
-the document, sitemap, robots, manifest and JSON-LD cannot disagree.
+`site.domain` in `src/data/site.ts` is the committed default. The effective
+origin is resolved through one function in `src/data/url.ts`, so the document,
+sitemap, robots, manifest and JSON-LD cannot disagree.
 
 ```bash
 pnpm build                                    # uses site.domain
-SITE_URL=https://hilbras-git-abc.vercel.app pnpm build   # preview identity
+SITE_URL=https://hilbras-git-abc.vercel.app pnpm build   # explicit override
 ```
 
-Without this, a preview deployment publishes the production canonical, Open Graph
-and JSON-LD identity — so a crawler that indexes a preview records production URLs
-as the address of preview content. Every published URL follows the override
-except third-party references, which are left alone. A malformed `SITE_URL` falls
-back with a warning rather than propagating into every URL, and
-`assert-build-output.mjs` fails if a preview build published a production
-identifier.
+Resolution order, first match wins:
 
-On Vercel, set `SITE_URL` per environment: production to the canonical domain, and
-preview to the deployment URL — Vercel exposes it as `VERCEL_URL`.
+| Source | Used when |
+| --- | --- |
+| `SITE_URL` | always — an explicit override |
+| `VERCEL_PROJECT_PRODUCTION_URL` | `VERCEL_ENV=production` |
+| `VERCEL_URL` | `VERCEL_ENV=preview` or `development` |
+| `site.domain` | anywhere else |
+
+So a Vercel deployment identifies itself with no configuration. Production takes
+the **production alias**, not `VERCEL_URL`: that one is unique per deployment, so
+using it would give every release its own identity and break canonicals across
+deploys. A preview takes its own host.
+
+This matters because a preview that publishes the production canonical is a real
+defect, not a cosmetic one: a canonical is a claim about which URL is the real
+one, and a crawler indexing a preview would record production addresses as the
+home of preview content. Every published URL follows the resolution — canonical,
+Open Graph, Twitter cards, JSON-LD identifiers, `robots.txt`, every `<loc>`.
+
+A malformed `SITE_URL` falls back with a warning rather than propagating into
+every URL, and `assert-build-output.mjs` fails if a preview build published a
+production identifier. The build log names which source supplied the origin,
+because "the canonical is wrong and nothing says why" is a bad afternoon:
+
+```console
+$ vercel inspect "$DEPLOYMENT" --logs | grep prerender
+  prerender: 13 routes + a 404, 302.1 kB of markup,
+  origin https://hilbras-abc123-….vercel.app (from VERCEL_ENV=preview)
+```
+
+Note that `vercel --prod=false` is **not** the preview path — it still builds
+with `VERCEL_ENV=production`. Bare `vercel` is.
 
 Before switching domains, also regenerate the social image — its footer text
 lives in `scripts/og-template.html`.
@@ -420,6 +443,22 @@ vercel link
 vercel --prod
 node scripts/smoke.mjs https://hilbras.vercel.app
 ```
+
+A preview deployment is behind Vercel Authentication, and the smoke test needs
+to say so rather than fail obscurely — an anonymous request gets the login
+interstitial, which is a **200** with none of the site's content, so every
+assertion fails at once and a working deploy reads as broken. Pass
+`--via-vercel-cli` to route requests through `vercel curl`, which carries the
+protection bypass, and `SITE_URL` to say what the preview should claim as its
+origin:
+
+```bash
+vercel                                             # preview
+SITE_URL="$PREVIEW" node scripts/smoke.mjs "$PREVIEW" --via-vercel-cli
+```
+
+One transport, three targets, one set of assertions: local `dist/`, production
+anonymously, and a protected preview.
 
 ## Design language
 
@@ -759,6 +798,7 @@ CDN serving a stale `index.html`. None of those fail a local check.
 
 ```bash
 node scripts/smoke.mjs https://hilbras.vercel.app
+SITE_URL="$PREVIEW" node scripts/smoke.mjs "$PREVIEW" --via-vercel-cli
 ```
 
 It verifies seven endpoints return 200 with the right content type and real
@@ -768,6 +808,10 @@ origin; that the `og:image` resolves to a fetchable image rather than a
 directory; that there is one `h1` and no dead anchors; that the JSON-LD parses
 with no foreign origin; that the policy has no `unsafe-inline` and the transport
 headers are present; and that every asset the document references loads.
+
+The same script runs against a local `dist/`, production anonymously, and a
+protected preview through `vercel curl` — one set of assertions, three targets.
+See [environments](#environments) for why a preview needs the bypass.
 
 ## Deploying
 
@@ -779,6 +823,11 @@ node scripts/smoke.mjs https://hilbras.vercel.app
 **The repository is private**, so there is no Vercel Git integration and deploys
 are manual from a clone. Connecting one requires adding the project to the
 account explicitly or making the repository public.
+
+A manual preview is fully verified — `vercel` then
+`node scripts/smoke.mjs "$PREVIEW" --via-vercel-cli` — so the missing piece is
+only the automation, not the confidence in the output. See
+[deployment verification](#deployment-verification).
 
 Before a real launch:
 

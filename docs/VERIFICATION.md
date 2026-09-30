@@ -185,6 +185,73 @@ not about.
 Every route's description is unique: 13 distinct descriptions across 13 routes,
 which the smoke test asserts. Eleven previously would not have existed at all.
 
+## Preview deployments
+
+A preview is the one place a build can be correct and the deployment still
+wrong, and it had never been tested. It is now.
+
+**Which origin a build claims.** `resolveSiteUrl` takes the first of:
+
+| Source | Used for | Why |
+| --- | --- | --- |
+| `SITE_URL` | an explicit override | always wins, on purpose |
+| `VERCEL_PROJECT_PRODUCTION_URL` | `VERCEL_ENV=production` | the production alias, **not** `VERCEL_URL`, which is unique per deployment and would give every release its own identity |
+| `VERCEL_URL` | `VERCEL_ENV=preview` or `development` | the host the build is served from |
+| `site.domain` | anywhere else | the committed default |
+
+A preview that publishes the production canonical is a real defect, not a
+cosmetic one: a canonical is a claim about which URL is the real one, and a
+crawler that indexes a preview would record production addresses as the home of
+preview content.
+
+Verified on a real deployment of commit `9201ebe`:
+
+```console
+$ vercel
+  Deployment hilbras-q63hxnsjf-….vercel.app ready.
+
+$ vercel inspect https://hilbras-q63hxnsjf-….vercel.app --logs | grep prerender
+  prerender: 13 routes + a 404, 302.1 kB of markup,
+  origin https://hilbras-q63hxnsjf-….vercel.app (from VERCEL_ENV=preview)
+```
+
+Every URL the preview serves names the preview and none name production:
+
+| Where | Value |
+| --- | --- |
+| `rel="canonical"` | `https://hilbras-q63hxnsjf-….vercel.app/` |
+| `og:url` | same |
+| JSON-LD `@id` | `…vercel.app/#organization` |
+| `robots.txt` `Sitemap:` | `…vercel.app/sitemap.xml` |
+| every `<loc>` in `sitemap.xml` | 13 of 13 name the preview |
+
+`vercel --prod=false` does **not** do this — it still builds with
+`VERCEL_ENV=production`. Bare `vercel` is the preview path.
+
+**Smoke-testing a protected preview.** Preview deployments are behind Vercel
+Authentication, and the failure mode is nasty: an anonymous request gets the
+login interstitial, which is a **200** carrying no site content, so every
+assertion fails at once and a working deploy reads as catastrophically broken.
+`smoke.mjs --via-vercel-cli` routes requests through `vercel curl`, which carries
+the protection bypass:
+
+```console
+$ SITE_URL="$P" node scripts/smoke.mjs "$P" --via-vercel-cli
+  ok  routes       13 checked, all serve their own canonical
+  ok  assets        7 referenced, all load
+  smoke: passed
+```
+
+The same script, unchanged, passes against production anonymously and against
+the local `dist/` — one transport, three targets, one set of assertions.
+
+Two defects in the checking itself were found and fixed by running it. The
+transport decoded `curl -i` output as text, which broke the `/og.png` magic-number
+check; and `Buffer.indexOf` with a numeric needle above 255 never matches, so
+every header parsed as empty and the whole CSP section silently passed vacuously.
+A verification script that reports nothing is worse than none.
+
+
 ## Paint
 
 The homepage `h1` is the largest contentful paint on the site's most important

@@ -180,7 +180,17 @@ await writeFile(join(dist, '404.html'), notFound, 'utf8');
 // step have all read from it.
 await rm(join(root, '.ssr'), { recursive: true, force: true });
 
+// Which of the three sources supplied the origin, named in the build log
+// because "the canonical is wrong and nothing says why" is a bad afternoon.
+const source = (() => {
+  if (process.env.SITE_URL?.trim()) return 'SITE_URL';
+  if (process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview' || process.env.VERCEL_ENV === 'development') {
+    return `VERCEL_ENV=${process.env.VERCEL_ENV}`;
+  }
+  return 'site.domain';
+})();
+
 console.log(
   `prerender: ${routes.length} routes + a 404, ${(totalMarkup / 1024).toFixed(1)} kB of markup, ` +
-    `origin ${origin}${origin === site.domain ? '' : ' (from SITE_URL)'}`,
+    `origin ${origin} (from ${source})`,
 );

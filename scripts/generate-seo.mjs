@@ -102,4 +102,5 @@ await writeFile(join(root, 'dist', 'robots.txt'), robots, 'utf8');
 await writeFile(join(root, 'dist', 'sitemap.xml'), sitemap, 'utf8');
 await writeFile(join(root, 'dist', 'site.webmanifest'), manifest, 'utf8');
 
-console.log(`seo: robots.txt, sitemap.xml, site.webmanifest written for ${origin}`);
+const source = process.env.SITE_URL?.trim() ? 'SITE_URL' : process.env.VERCEL_ENV ? `VERCEL_ENV=${process.env.VERCEL_ENV}` : 'site.domain';
+console.log(`seo: robots.txt, sitemap.xml, site.webmanifest written for ${origin} (from ${source})`);
