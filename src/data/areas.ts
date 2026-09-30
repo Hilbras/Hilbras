@@ -1,4 +1,5 @@
-import type { MarkId } from '../components/ui/Mark';
+import type { MarkId } from './marks';
+import type { StageId } from './stages';
 
 /**
  * The taxonomy the whole site is built on.
@@ -43,6 +44,8 @@ export type Product = {
   id: string;
   name: string;
   area: AreaId;
+  /** Which band of the connection map this product appears in. */
+  stage: StageId;
   /** Two or three sentences. The full description on the product cards. */
   description: string;
   /** One line, for the navigation dropdown and the footer. */
@@ -153,6 +156,7 @@ export const products: readonly Product[] = [
     id: 'sdk',
     name: 'Hilbras SDK',
     area: 'ai',
+    stage: 'intelligence',
     description:
       'A provider-agnostic LLM client SDK for TypeScript. Streaming, tool calling, structured output, circuit breaker, retry, and cost enforcement across OpenAI, Anthropic, Gemini, Azure, Groq, and Ollama — with zero runtime dependencies.',
     summary: 'A provider-agnostic LLM client SDK for TypeScript.',
@@ -174,6 +178,7 @@ export const products: readonly Product[] = [
     id: 'remembera',
     name: 'Hilbras Remembera',
     area: 'ai',
+    stage: 'intelligence',
     description:
       'External memory for AI assistants. Facts, decisions, roles, and history live outside the context window, and only the authorised, relevant subset comes back. Speaks MCP, HTTP, and TypeScript.',
     summary: 'Durable memory for AI assistants, outside the context window.',
@@ -195,6 +200,7 @@ export const products: readonly Product[] = [
     id: 'keystone',
     name: 'Hilbras Keystone',
     area: 'developer-infrastructure',
+    stage: 'foundation',
     description:
       'An API-first identity and authentication platform. OIDC and OAuth 2.0, a JWT token authority, RBAC and ABAC, WebAuthn passkeys, a federation broker, and an immutable audit log.',
     summary: 'An API-first identity and authentication platform.',
@@ -216,6 +222,7 @@ export const products: readonly Product[] = [
     id: 'hilpress',
     name: 'HilPress',
     area: 'platforms',
+    stage: 'application',
     description:
       'An extensible application and content runtime. Users, roles, content, revisions, taxonomy, media, and a plugin system with manifests, lifecycle hooks, and permissions.',
     summary: 'An extensible application and content runtime.',
@@ -229,6 +236,7 @@ export const products: readonly Product[] = [
     id: 'studio',
     name: 'Hilbras Studio',
     area: 'platforms',
+    stage: 'application',
     description:
       'A goal-driven AI runtime. Give it a goal; it plans the work, schedules it, and publishes across X, Instagram, Facebook, Threads, and Telegram — pausing where a person has to approve.',
     summary: 'A goal-driven runtime that plans, schedules, and publishes.',
@@ -243,6 +251,7 @@ export const products: readonly Product[] = [
     id: 'gateway',
     name: 'Hilbras Gateway',
     area: 'ai',
+    stage: 'intelligence',
     description:
       'A single edge in front of every model provider. One endpoint, one key, and one place to decide where a request is allowed to run.',
     summary: 'A single edge in front of every model provider.',
@@ -254,6 +263,7 @@ export const products: readonly Product[] = [
     id: 'omnihilbras',
     name: 'OmniHilbras',
     area: 'ai',
+    stage: 'intelligence',
     description:
       'Routing and provider management. Health checks, retries, and fallbacks decide which model serves a request, the local gateway keeps your keys on your own machine, and every decision stays readable afterwards.',
     summary: 'Routing and provider management for model traffic.',
@@ -275,6 +285,7 @@ export const products: readonly Product[] = [
     id: 'os',
     name: 'Hilbras OS',
     area: 'computing',
+    stage: 'environment',
     description:
       'A desktop operating system with its own shell, dock, workspaces, and system services — an environment for Hilbras software rather than a rebrand of the base system.',
     summary: 'A desktop operating system with its own shell and services.',
@@ -287,6 +298,7 @@ export const products: readonly Product[] = [
     id: 'code',
     name: 'Hilbras Code',
     area: 'developer-infrastructure',
+    stage: 'application',
     description:
       'A coding agent with one core and four surfaces — web, desktop, CLI, and editor. A streaming agent loop, filesystem and shell tools, and a permission layer that fails closed.',
     summary: 'A coding agent for web, desktop, CLI, and editor.',
@@ -307,6 +319,7 @@ export const products: readonly Product[] = [
     id: 'hilgit',
     name: 'HilGit',
     area: 'social',
+    stage: 'application',
     description:
       'Code collaboration and a working community around it. Review, discussion, and the shared record of what a project is and why it looks the way it does.',
     summary: 'Code collaboration and community around a project.',
@@ -318,6 +331,7 @@ export const products: readonly Product[] = [
     id: 'spectra',
     name: 'Hilbras Spectra',
     area: 'security',
+    stage: 'environment',
     description:
       'A modular, extensible security testing and analysis platform — a 21-crate Rust workspace covering target management, discovery, fingerprinting, scanning, verification, and reporting.',
     summary: 'A modular security testing and analysis platform.',
@@ -327,6 +341,7 @@ export const products: readonly Product[] = [
     mark: 'shield',
     repository: 'https://github.com/Hilbras/Spectra',
   },
+
 ] as const;
 
 export const areaById = new Map(areas.map((area) => [area.id, area]));

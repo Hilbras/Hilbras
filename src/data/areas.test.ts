@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { markIds } from './marks';
+import { connectionStages, stageIds } from './stages';
 import {
   areas,
   productById,
@@ -133,4 +135,46 @@ describe('area mapping', () => {
     expect(productById.get('nope')).toBeUndefined();
     expect(productById.size).toBe(products.length);
   });
+  // These three existed as component state and were found by actually adding a
+  // product: a mark that could not be added without editing a component, a
+  // diagram band that silently dropped a new product, and a browser test with a
+  // hardcoded eleven. They are asserted here so the next one is caught by the
+  // suite rather than by a person noticing a missing tile.
+  it('gives every product a mark of its own, drawn in the table', () => {
+    // A shared mark claims two products are the same thing. Areas may reuse a
+    // product's mark deliberately — Security uses the shield Spectra draws — but
+    // two products may not share with each other.
+    const owners = new Map<string, string[]>();
+    for (const product of products) {
+      owners.set(product.mark, [...(owners.get(product.mark) ?? []), product.id]);
+    }
+    for (const [mark, ids] of owners) {
+      expect(ids.length, `"${mark}" is shared by ${ids.join(', ')}`).toBe(1);
+      expect(markIds, mark).toContain(mark);
+    }
+  });
+
+  it('leaves no mark in the table that no product uses', () => {
+    // An undrawn mark means a product was renamed or removed and something was
+    // left behind — the same class of defect as a stale link.
+    for (const mark of markIds) {
+      expect(products.some((product) => product.mark === mark), `"${mark}" is unused`).toBe(true);
+    }
+  });
+
+  it('puts every product in a band, and every band has a product', () => {
+    // The connection map derives its nodes from `stage`, so a product without one
+    // would vanish from the diagram without any error. That is exactly what
+    // happened before the bands moved into the data layer.
+    for (const product of products) {
+      expect(stageIds, product.id).toContain(product.stage);
+    }
+    for (const stage of connectionStages) {
+      expect(
+        products.some((product) => product.stage === stage.id),
+        `the "${stage.id}" band is empty`,
+      ).toBe(true);
+    }
+  });
+
 });

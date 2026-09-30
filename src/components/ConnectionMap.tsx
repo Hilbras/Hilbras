@@ -1,59 +1,35 @@
-import { areas, productById } from '../data/areas';
+import { areas, products } from '../data/areas';
+import { connectionStages, type StageId } from '../data/stages';
 import { Mark } from './ui/Mark';
 import { ProductLink } from './ui/ProductLink';
 import { Reveal } from './ui/Reveal';
 import { Section, SectionHeader } from './ui/Section';
 
-type Stage = {
-  id: string;
-  label: string;
-  /** Product ids rendered as nodes in this band. */
-  products: readonly string[];
-  note: string;
-};
+type Stage = (typeof connectionStages)[number];
 
 /**
- * A conceptual map of the company, not a dependency graph. Bands are ordered by
- * how foundational the work is, which is the same order the vision section uses.
+ * The products in a band, read from each product's own `stage` field.
+ *
+ * This used to be a hardcoded list of ids inside this file, so a product added
+ * to the data layer did not appear here and nothing in the type system or the
+ * data layer noticed — only a test. Deriving the membership from the product
+ * records removes the second copy of the truth; the bands themselves are still
+ * ordered by how foundational the work is, which is the same order the vision
+ * section uses, and that order is data in `src/data/stages.ts`.
  */
-const stages: readonly Stage[] = [
-  {
-    id: 'foundation',
-    label: 'Foundation',
-    products: ['keystone'],
-    note: 'Identity, access, and the audit trail everything else assumes.',
-  },
-  {
-    id: 'intelligence',
-    label: 'Intelligence',
-    products: ['sdk', 'gateway', 'omnihilbras', 'remembera'],
-    note: 'Reaching models, controlling the route, and keeping what matters.',
-  },
-  {
-    id: 'application',
-    label: 'Application',
-    products: ['hilpress', 'studio', 'code', 'hilgit'],
-    note: 'Runtimes, automation, authoring, and collaboration.',
-  },
-  {
-    id: 'environment',
-    label: 'Environment',
-    products: ['os', 'spectra'],
-    note: 'The computing surface, and the tooling that inspects it.',
-  },
-] as const;
+function productsInStage(stageId: StageId) {
+  return products.filter((product) => product.stage === stageId);
+}
 
-function StageNodes({ stage }: { stage: Stage }) {
+function StageNodes({ stageId }: { stageId: StageId }) {
   return (
     /* Always four tracks: a band with one product occupies one cell rather than
        stretching, so every node on the page keeps the same size. */
     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {stage.products.map((id) => {
-        const product = productById.get(id);
-        if (!product) return null;
+      {productsInStage(stageId).map((product) => {
         const area = areas.find((entry) => entry.id === product.area);
         return (
-          <li key={`${stage.id}-${id}`}>
+          <li key={product.id}>
             <ProductLink product={product} className="node flex h-full flex-col gap-1.5 px-3 py-3">
               <span className="flex items-center gap-2">
                 <Mark id={product.mark} className="h-4 w-4 shrink-0 text-gold" />
@@ -90,7 +66,7 @@ function StageBand({ stage, index }: { stage: Stage; index: number }) {
           </p>
           <p className="muted mt-2 text-xs leading-relaxed">{stage.note}</p>
         </div>
-        <StageNodes stage={stage} />
+        <StageNodes stageId={stage.id} />
       </div>
     </div>
   );
@@ -107,7 +83,7 @@ export function ConnectionMap() {
       />
 
       <div className="stagger mt-12">
-        {stages.map((stage, index) => (
+        {connectionStages.map((stage, index) => (
           <Reveal key={stage.id}>
             <StageBand stage={stage} index={index} />
           </Reveal>

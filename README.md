@@ -140,7 +140,7 @@ enough to keep out of the inner loop. `pnpm check` is what CI's `check` job and
 ```text
 React components
       ↓
-src/data/*        one source of truth: products, areas, copy, domain
+src/data/*        one source of truth: products, areas, marks, bands, copy, domain
       ↓
 Vite client build          Vite SSR build (--mode ssr)
       ↓                          ↓
@@ -155,9 +155,14 @@ dist/assets/*              .ssr/entry-server.mjs
 
 Three properties this arrangement is chosen for:
 
-1. **Adding a product is a data edit.** One record in `src/data/areas.ts` reaches
-   the grid, the navigation, the footer, the connection map, the structured data,
-   and the sitemap. No component changes.
+1. **Adding a product is a data edit.** One record in `src/data/areas.ts` plus
+   the owning area's `products` array reaches the grid, the navigation, the
+   footer, the connection map, the product page, the structured data, the
+   sitemap, the 404 page and the browser suite. No component changes, and no
+   test needs editing. This was false until it was tested by actually doing it —
+   see [`docs/ADDING_A_PRODUCT.md`](docs/ADDING_A_PRODUCT.md) for the process
+   and for the two component-coupled states that had to move into the data layer
+   first.
 2. **The first paint is real markup.** The prerender step exists because search
    engines run JavaScript but GPTBot, ClaudeBot, PerplexityBot, and most
    archiving tools do not.
@@ -207,6 +212,8 @@ src/
 │   └── components.test.tsx
 ├── data/
 │   ├── areas.ts              products, areas, statuses, kinds, helpers
+│   ├── marks.ts              product marks, as geometry on one 24-unit grid
+│   ├── stages.ts             the connection map's bands, least to most foundational
 │   ├── site.ts               company, domain, navigation, copy, audiences
 │   ├── links.ts              productHref / isExternalHref / externalRel
 │   ├── structuredData.ts     the JSON-LD graph
@@ -693,6 +700,8 @@ Four layers. The first three are fast; the browser suite needs a build first.
 
 **Data and logic** (`src/data/*.test.ts`) — unique ids and names, ids safe as URL
 fragments, every product in a real area, every area referencing a real product,
+every product in a real connection-map band, and every mark drawn, used by
+exactly one product, with none left over in the table,
 repository URLs inside the organisation, nothing marked stable without something
 publicly released, link helpers, origin resolution including malformed
 `SITE_URL` values, and the structured data: one node per product, every identifier
@@ -874,6 +883,8 @@ patch. A new section, a new generated file, or a new command is a minor.
   derived from: what was reused, what was adapted, what is specific to Hilbras.
 - `docs/VERIFICATION.md` — the measured claims in this file, with the commands
   that produce them and what could not be checked.
+- `docs/ADDING_A_PRODUCT.md` — the procedure for adding a product, and what the
+  dry run found when the claim it makes was tested for the first time.
 - `docs/DEPENDENCIES.md` — the product dependency audit: every manifest in the
   `github.com/Hilbras` organisation, and the result that **no Hilbras product
   depends on any other**. That is why the connection map says "independent by

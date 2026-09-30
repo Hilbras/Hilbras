@@ -64,6 +64,29 @@ const cases = [
         .replace("products: ['keystone', 'code', 'hilgit']", "products: ['keystone', 'code']")
         .replace("products: ['hilgit', 'studio', 'hilpress']", "products: ['studio', 'hilpress']"),
   },
+  // The next three are the second line of defence. `tsc` rejects a product
+  // naming a mark or a band that does not exist, so these cases cast the value
+  // to silence the compiler — which is exactly what someone does when they want
+  // the build to go through. The validator reads the compiled bundle, so it is
+  // what catches them.
+  {
+    name: 'product naming a mark nobody drew',
+    expect: 'invalid-mark-reference',
+    // The Security *area* also draws a shield, and a plain string replace takes
+    // the first hit — which would be the area, not the product. Anchoring on the
+    // product's own id is what makes this case test what it claims to.
+    mutate: (s) => s.replace(/(id: 'spectra',[\s\S]*?)mark: 'shield',/, "$1mark: 'compass' as MarkId,"),
+  },
+  {
+    name: 'product in a band that does not exist',
+    expect: 'invalid-stage-reference',
+    mutate: (s) => s.replace("    stage: 'environment',", "    stage: 'spacetime' as StageId,"),
+  },
+  {
+    name: 'two products sharing a mark',
+    expect: 'duplicate-product-mark',
+    mutate: (s) => s.replace("    mark: 'terminal',", "    mark: 'branches',"),
+  },
   {
     name: 'summary identical to description',
     expect: 'redundant-summary',

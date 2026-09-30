@@ -1,4 +1,6 @@
 import { expect, gotoHome, test } from './fixtures';
+import { areas, products } from '../../src/data/areas';
+import { counts } from '../../src/data/site';
 
 /**
  * The product pages, the index, and the 404.
@@ -7,19 +9,19 @@ import { expect, gotoHome, test } from './fixtures';
  * a document that builds green and arrives with nothing in it. Each one is
  * checked for content, its own canonical, and a working back path.
  */
-const PRODUCTS = [
-  ['sdk', 'Hilbras SDK'],
-  ['remembera', 'Hilbras Remembera'],
-  ['keystone', 'Hilbras Keystone'],
-  ['hilpress', 'HilPress'],
-  ['studio', 'Hilbras Studio'],
-  ['gateway', 'Hilbras Gateway'],
-  ['omnihilbras', 'OmniHilbras'],
-  ['os', 'Hilbras OS'],
-  ['code', 'Hilbras Code'],
-  ['hilgit', 'HilGit'],
-  ['spectra', 'Hilbras Spectra'],
-] as const;
+/**
+ * The product registry, read rather than restated.
+ *
+ * This file used to carry its own eleven-row list of product slugs and names,
+ * which was an eleventh copy of the truth — and a copy that had to be edited by
+ * hand when a product was added, or the suite would go on asserting a page that
+ * no longer existed. Reading the registry makes the assertions below about
+ * *completeness*: that the index shows every product the data layer declares,
+ * exactly once, rather than that it shows eleven of them.
+ */
+const PRODUCTS = products.map((product) => [product.id, product.name] as const);
+const PRODUCT_PATHS = new Set(products.map((product) => `/products/${product.id}`));
+const AREA_NAMES = areas.map((area) => area.name);
 
 test.describe('product pages', () => {
   test('every product has a page, with its own canonical', async ({ page, problems }) => {
@@ -159,9 +161,13 @@ test.describe('the product index', () => {
     const hrefs = await cards.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('href') ?? ''));
 
     // A product in two areas used to appear under both, so the page announced
-    // eleven products and showed sixteen entries.
-    expect(new Set(hrefs).size).toBe(11);
-    expect(hrefs).toHaveLength(11);
+    // eleven products and showed sixteen entries. Set equality catches that
+    // class of bug in both directions: a product missing from the page, and an
+    // entry on the page that is not a product.
+    const linked = new Set(hrefs);
+    expect([...linked].filter((href) => !PRODUCT_PATHS.has(href))).toEqual([]);
+    expect([...PRODUCT_PATHS].filter((path) => !linked.has(path))).toEqual([]);
+    expect(hrefs).toHaveLength(PRODUCT_PATHS.size);
 
     for (const [, name] of PRODUCTS) {
       await expect(page.getByRole('link', { name: new RegExp(name) }).first()).toBeVisible();
@@ -172,12 +178,16 @@ test.describe('the product index', () => {
     await page.goto('/products', { waitUntil: 'load' });
     // Polled rather than read once: the lede is a scroll reveal with a 580ms
     // transition, so a fixed short wait can catch it mid-fade.
-    await expect(page.getByText(/11 products across 6 technology areas/)).toBeVisible();
+    // Built from the same numbers the page is built from, so this can only fail
+    // if the page and the registry disagree — which is the thing worth checking.
+    await expect(
+      page.getByText(`${counts.products} products across ${counts.areas} technology areas`),
+    ).toBeVisible();
   });
 
   test('names every area', async ({ page }) => {
     await page.goto('/products', { waitUntil: 'load' });
-    for (const area of ['AI Infrastructure', 'Developer Infrastructure', 'Platforms', 'Social Technology', 'Computing', 'Security']) {
+    for (const area of AREA_NAMES) {
       await expect(page.getByRole('heading', { level: 2, name: area, exact: true })).toBeVisible();
     }
   });
@@ -218,6 +228,10 @@ test.describe('the homepage is unchanged', () => {
     // The roadmap's constraint: the homepage represents the company, and
     // detailed product information moved to the product pages rather than
     // piling up here.
-    await expect(page.locator('#products article')).toHaveCount(11);
+    // Every product, from the registry rather than a remembered number. The
+    // homepage grid shows all of them; `featured` only decides which get a wide
+    // card on the index.
+    await expect(page.locator('#products article')).toHaveCount(products.length);
+    expect(counts.featured).toBeLessThanOrEqual(products.length);
   });
 });

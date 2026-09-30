@@ -1,5 +1,7 @@
 import { areas, products, productsInArea, productSchemas, statusOrder, statusDefinitions, statusLabels, type Product } from './areas';
 import { isExternalHref } from './links';
+import { markIds } from './marks';
+import { connectionStages, stageIds } from './stages';
 import { audiences, footerGroups, navLinks, principles, vision } from './site';
 
 export type Issue = {
@@ -43,6 +45,30 @@ export function validateData(): Issue[] {
 
     if (!areas.some((area) => area.id === product.area)) {
       error('invalid-area-reference', `${where}: area "${product.area}" is not a known area.`);
+    }
+
+    // Both of these used to be enforced by a component rather than by the data,
+    // which meant a product could be published while silently missing from the
+    // diagram, and a mark that did not exist compiled fine and rendered an empty
+    // box. `tsc` rejects a product naming a mark or band nobody drew, but
+    // `build:server` is esbuild and does no type checking at all — so this is
+    // the only thing standing between a cast and a live page with a blank tile.
+    if (!stageIds.includes(product.stage)) {
+      error('invalid-stage-reference', `${where}: stage "${product.stage}" is not a known band. Known: ${stageIds.join(', ')}.`);
+    }
+    if (!markIds.includes(product.mark)) {
+      error('invalid-mark-reference', `${where}: mark "${product.mark}" is not in src/data/marks.ts.`);
+    }
+
+    // Two products sharing a mark is a claim they are the same thing. Areas may
+    // reuse a product's mark deliberately — Security uses the shield that
+    // Spectra draws — so this is only about products.
+    const sharing = products.filter((other) => other.mark === product.mark);
+    if (sharing.length > 1) {
+      error(
+        'duplicate-product-mark',
+        `${where}: mark "${product.mark}" is also used by ${sharing.filter((other) => other.id !== product.id).map((other) => other.id).join(', ')}. Each product needs its own mark.`,
+      );
     }
 
     if (!statusLabels[product.status]) {
@@ -111,6 +137,20 @@ export function validateData(): Issue[] {
   if (featured.length === 0) error('no-featured-products', 'No product is marked featured.');
   if (featured.length > products.length / 2) {
     warn('too-many-featured', `${featured.length} of ${products.length} products are featured, which stops the grid distinguishing them.`);
+  }
+
+  // An unused band or an undrawn mark is not an error — the data may legitimately
+  // be ahead of a product — but it is worth seeing, because both usually mean a
+  // product was renamed or removed and something was left behind.
+  for (const stage of connectionStages) {
+    if (!products.some((product) => product.stage === stage.id)) {
+      warn('empty-stage', `No product is in the "${stage.id}" band, so it renders empty.`);
+    }
+  }
+  for (const mark of markIds) {
+    if (!products.some((product) => product.mark === mark)) {
+      warn('unused-mark', `No product uses the "${mark}" mark.`);
+    }
   }
 
   // --- Areas ------------------------------------------------------------

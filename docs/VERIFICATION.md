@@ -252,6 +252,64 @@ every header parsed as empty and the whole CSP section silently passed vacuously
 A verification script that reports nothing is worse than none.
 
 
+## Adding a product
+
+The site's central claim is that a product is a data edit. It had never been
+tested by doing it, so it was: a twelfth product was added on a branch and the
+gate run at every step. **The claim was false in two places**, and the dry run
+is recorded in [`ADDING_A_PRODUCT.md`](ADDING_A_PRODUCT.md).
+
+| | before | after |
+| --- | --- | --- |
+| Files needing an edit | `areas.ts`, `marks.ts`, **`Mark.tsx`**, **`ConnectionMap.tsx`**, **`pages.spec.ts`** | `areas.ts`, `marks.ts` |
+| Component files | 2 | 0 |
+| Tests needing an edit | 1 file, 3 hardcoded counts | 0 |
+
+The two component-coupled states:
+
+- `MarkId` was a union of eleven literals declared in `Mark.tsx` beside the JSX
+  that drew them, so `areas.ts` imported its type *from a component* and a new
+  mark could not be added without editing one. Marks are data; they moved to
+  `marks.ts` and `Mark` became a renderer.
+- `ConnectionMap.tsx` held a `stages` array with a **hardcoded list of product
+  ids**. A twelfth product did not appear in the diagram, with no error, no
+  warning and no type failure. The bands moved to `stages.ts` and each product
+  declares a `stage`, so the map has no second copy of the truth.
+
+Verified in the twelve-product state:
+
+```console
+$ pnpm check
+      Tests  124 passed (124)
+  12/12 cases caught
+prerender: 14 routes + a 404, 324.9 kB of markup
+build output: ok — 117.0 kB document, 21 articles, 1 JSON-LD block
+smoke: passed
+$ npx playwright test --project=chromium
+  62 passed
+```
+
+14 routes, 21 articles, 13 sitemap entries, and the JSON-LD graph grew by one
+node — with nothing outside the data layer written.
+
+**Four bugs found by the exercise**, three in the code and one mine:
+
+| Bug | How it showed |
+| --- | --- |
+| `MarkId` closed over a component's JSX | `tsc` rejected a valid new mark |
+| a product missing from the diagram | one component test; no error, no warning |
+| three browser tests with a hardcoded `11` | three failures on a twelfth product |
+| my new `invalid-stage-reference` check was written *inside* the `if (!areas.some(…))` block | 3 of 12 self-test cases reported "data layer consistent" on a product in a band that does not exist |
+
+The last is the argument for `verify-validator.mjs`: a check written but never
+seen to reject anything had silently never run.
+
+Three of the twelve self-test cases are reachable **only** because
+`build:server` is esbuild and does no type checking — `tsc` catches an unknown
+mark during `pnpm typecheck`, but the deploy build is
+`build:client && build:server`, so a cast would sail through. Those cases mutate
+the data with an `as` cast for exactly that reason.
+
 ## Paint
 
 The homepage `h1` is the largest contentful paint on the site's most important
