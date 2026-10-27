@@ -93,8 +93,8 @@ function descriptionFor(route) {
     // came to 177 characters, of which a search result shows about 155 — the
     // rest was written, shipped, and never read by anyone.
     return (
-      `All ${counts.products} Hilbras products, grouped by the area of technology they belong to: ` +
-      `${areas.map((area) => area.short.toLowerCase()).join(', ')}.`
+      `Explore all ${counts.products} Hilbras products grouped by technology area: ` +
+      `${areas.map((area) => area.short.toLowerCase()).join(', ')}. Find the right tool for your stack.`
     );
   }
   if (route.kind === 'developers') {
@@ -102,8 +102,7 @@ function descriptionFor(route) {
     // actually shares one licence, so the sentence cannot outlive the data.
     const licence = registryLicence ? `, all ${registryLicence}` : '';
     return (
-      `${sentence(publishedPackages.length)} Hilbras products on npm${licence}, each usable on its own — ` +
-      'package name, version and install command, with the date each was read.'
+      `Install Hilbras npm packages directly. ${sentence(publishedPackages.length)} products on npm${licence}, each usable on its own — package name, version and install command, with the date each was read.`
     );
   }
   if (route.kind === 'notFound') {

@@ -29,7 +29,7 @@ export const site = {
    * which is why it is a single value rather than a per-route one while there
    * is only a single route.
    */
-  lastModified: '2026-09-29',
+  lastModified: '2026-10-27',
   organisation: {
     legalName: 'Hilbras',
     founding: '2026',
@@ -163,6 +163,15 @@ export const footerGroups: ReadonlyArray<{ title: string; links: readonly NavLin
       { href: '/developers', label: 'For developers' },
       { href: 'https://github.com/Hilbras', label: 'GitHub' },
     ],
+  },
+  {
+    title: 'Documentation',
+    links: products
+      .filter((product) => product.documentation)
+      .map((product) => ({
+        href: product.documentation!,
+        label: `${product.name} docs`,
+      })),
   },
   {
     title: 'Company',
