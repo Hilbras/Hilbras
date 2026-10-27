@@ -47,7 +47,17 @@ for (const [key, expected] of Object.entries(required)) {
 
 // HSTS is only honoured with a preload directive on a domain you control, and
 // it is not revocable inside its max-age, so the value is checked explicitly.
-const hsts = headers['strict-transport-security'] ?? '';
+//
+// Read from `vercel.json` rather than from the served response: the local server
+// is plain HTTP and deliberately withholds this header, because WebKit upgrades
+// loopback to HTTPS when it sees it and then fails every asset on a TLS
+// handshake error. `vercel.json` is what the deployment actually applies, so that
+// is the right place to assert it.
+const hsts =
+  vercel.headers
+    .flatMap((rule) => rule.headers)
+    .find((header) => header.key.toLowerCase() === 'strict-transport-security')?.value ?? '';
+check(/max-age=\d{7,}/.test(hsts), 'Strict-Transport-Security should set a one-year max-age');
 check(/includeSubDomains/.test(hsts), 'Strict-Transport-Security should include subdomains');
 check(/preload/.test(hsts), 'Strict-Transport-Security should request preload');
 

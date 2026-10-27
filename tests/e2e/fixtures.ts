@@ -107,9 +107,27 @@ export async function scrollThroughPage(page: Page): Promise<void> {
 
 /** The elements still not fully opaque, for a reveal assertion. */
 export function stillHidden(page: Page): Promise<string[]> {
+  // Only elements the reader can actually see.
+  //
+  // This used to count every `.reveal` on the page, which asserts a stronger
+  // property than anyone cares about: that nothing anywhere is mid-transition.
+  // Chromium happened to satisfy it — an element revealed off-screen transitions
+  // immediately — and WebKit does not: it defers the transition until the
+  // element is painted, so content 8,600px above the viewport is still at
+  // `opacity: 0`, correctly, and a reader scrolling back to it sees it appear.
+  //
+  // The property that matters is the one a reader would notice: nothing visible
+  // to them is invisible. Measured with a margin, because an element whose top
+  // edge is just above the fold is not a defect either.
   return page.evaluate(() =>
     [...document.querySelectorAll('.reveal')]
-      .filter((element) => Number(getComputedStyle(element).opacity) < 0.99)
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        if (Number(style.opacity) >= 0.99 || style.visibility === 'hidden') return false;
+        const box = element.getBoundingClientRect();
+        if (box.height === 0) return false;
+        return box.bottom > -200 && box.top < window.innerHeight + 200;
+      })
       .map((element) => (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 50)),
   );
 }

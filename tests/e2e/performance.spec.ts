@@ -13,27 +13,56 @@ test.describe('runtime cost', () => {
   test('sizes the particle canvas to the viewport, not the document', async ({ page }) => {
     await gotoHome(page);
 
-    const canvas = await page.evaluate(() => {
-      const element = document.querySelector('.particle-canvas') as HTMLCanvasElement | null;
-      if (!element) return null;
-      return {
-        width: element.width,
-        height: element.height,
-        cssHeight: getComputedStyle(element).height,
-        clientWidth: element.clientWidth,
-        clientHeight: element.clientHeight,
-      };
-    });
-
-    expect(canvas, 'the particle canvas is missing').not.toBeNull();
     const viewport = page.viewportSize()!;
+
+    // Polled, not sampled once. The canvas is resized by an effect after the
+    // first paint, so a read taken immediately can catch the pre-resize size —
+    // in WebKit that was exactly the document-sized value this test exists to
+    // catch, producing a false alarm about the very bug it guards.
+    const readCanvas = () =>
+      page.evaluate(() => {
+        const element = document.querySelector('.particle-canvas') as HTMLCanvasElement | null;
+        if (!element) return null;
+        return {
+          width: element.width,
+          height: element.height,
+          cssHeight: getComputedStyle(element).height,
+          clientWidth: element.clientWidth,
+          clientHeight: element.clientHeight,
+        };
+      });
+
+    // Polled on the *assertion*, not on the element's existence. The canvas is
+    // in the DOM from the first frame and is resized by an effect afterwards, so
+    // waiting for it to appear proves nothing; waiting for it to be the right
+    // size is the actual wait.
+    // The device pixel ratio is part of the answer, and only one engine gets it
+    // wrong. Playwright's `Desktop Safari` descriptor sets
+    // `deviceScaleFactor: 2`, so a correctly sized canvas has a backing store of
+    // `viewport * dpr` — which is exactly the bound this test used to assert
+    // against, making `height < viewport.height * 2` false for a canvas that is
+    // right. The CSS box is the dpr-independent truth, and the backing store is
+    // checked against it times the ratio.
+    const dpr = await page.evaluate(() => window.devicePixelRatio);
+
+    await expect
+      .poll(async () => (await readCanvas())?.clientHeight ?? Number.POSITIVE_INFINITY, {
+        message: 'the particle canvas is never sized to the viewport',
+      })
+      .toBeLessThanOrEqual(viewport.height);
+    const canvas = await readCanvas();
 
     // The document is roughly 10,500px tall. A canvas that matches it means an
     // ancestor has become its containing block again, which is what turned a
     // 4.9 MB backing store into 58.1 MB.
-    expect(canvas!.height).toBeLessThan(viewport.height * 2);
-    expect(canvas!.clientHeight).toBe(canvas!.height);
+    // The CSS box is the viewport, and the backing store is that box at the
+    // device pixel ratio. A canvas matching the ~10,500px document means an
+    // ancestor has become its containing block again — the bug that turned a
+    // 4.9 MB backing store into 58.1 MB.
+    expect(canvas!.clientHeight).toBeLessThanOrEqual(viewport.height);
     expect(canvas!.clientWidth).toBeLessThanOrEqual(viewport.width);
+    expect(canvas!.height).toBe(canvas!.clientHeight * dpr);
+    expect(canvas!.width).toBe(canvas!.clientWidth * dpr);
     expect(Math.abs(canvas!.cssHeight.replace('px', '').length)).toBeGreaterThan(0);
   });
 
@@ -44,18 +73,25 @@ test.describe('runtime cost', () => {
     // Every pixel of the backing store, not a sparse sample. Sampling every
     // 4000th byte of the alpha channel reported "empty" for a canvas that was
     // plainly rendering, which is a good way to ship a false negative.
-    const painted = await page.evaluate(() => {
-      const canvas = document.querySelector('.particle-canvas') as HTMLCanvasElement | null;
-      if (!canvas) return null;
-      const context = canvas.getContext('2d');
-      if (!context) return null;
-      const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      let lit = 0;
-      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) lit += 1;
-      return lit;
-    });
+    const countPainted = () =>
+      page.evaluate(() => {
+        const canvas = document.querySelector('.particle-canvas') as HTMLCanvasElement | null;
+        if (!canvas) return -1;
+        const context = canvas.getContext('2d');
+        if (!context) return -1;
+        const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let lit = 0;
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 0) lit += 1;
+        return lit;
+      });
 
-    expect(painted, 'the particle canvas is not rendering anything').toBeGreaterThan(100);
+    // Polled, because the field starts after hydration and the first animation
+    // frame, and a fixed wait is a race. WebKit gets there in about three
+    // seconds on this host; a 1.2s sleep read an empty backing store and
+    // reported a canvas that was in fact painting 11,617 pixels.
+    await expect
+      .poll(countPainted, { message: 'the particle canvas never painted anything' })
+      .toBeGreaterThan(100);
   });
 
   test('produces no sustained main-thread blocking while scrolling', async ({ page }) => {

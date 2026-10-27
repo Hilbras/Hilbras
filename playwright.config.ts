@@ -18,20 +18,27 @@ const SITE_URL = process.env.SITE_URL ?? `http://127.0.0.1:${PORT}`;
 /**
  * Firefox runs alongside Chromium.
  *
- * WebKit is configured but not enabled by default: it needs three system
- * libraries (`libevent-2.1-7t64`, `libavif16`, `libmanette-0.2-0`) that cannot be
- * installed without root on the machine this was built on. Uncommenting the
- * project below is all that is needed on a host that has them — run
- * `npx playwright install-deps webkit` first.
+ * WebKit is enabled, and it runs on a host with no root.
  *
- * Safari is not testable here at all, and neither is Edge as a distinct product.
- * Edge shares Chromium's engine, so the Chromium project covers its behaviour,
- * but its own shell is unverified.
+ * It needed seven system libraries that are not installed here:
+ * `libbacktrace0`, `libevent-2.1-7t64`, `libavif16`, `libmanette-0.2-0`,
+ * `libyuv0`, `libgav1-0` and `libhidapi-hidraw0`. All are ordinary Ubuntu
+ * packages. `scripts/fetch-webkit-deps.mjs` downloads and unpacks them into
+ * `~/.local/pw-deps` and prints the one `LD_LIBRARY_PATH` line needed, so the
+ * browser runs as an unprivileged user rather than being declared untestable.
+ *
+ * An earlier diagnosis of this said it needed libsoup and GStreamer built from
+ * source. That was wrong: `ldd -r` on the WebKit binary names every missing
+ * object, and none of them were libsoup.
+ *
+ * Safari itself is still not testable — this is Playwright's WebKit build, not
+ * Apple's. Nor is Edge as a distinct product: Edge shares Chromium's engine, so
+ * the Chromium project covers its behaviour, but its own shell is unverified.
  */
 const browsers: { name: string; use: Parameters<typeof devices>[0] }[] = [
   { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-  // { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  { name: 'webkit', use: { ...devices['Desktop Safari'] } },
 ];
 
 export default defineConfig({
@@ -67,7 +74,25 @@ export default defineConfig({
 
   projects: browsers.map((browser) => ({
     name: browser.name,
-    use: { ...browser.use },
+    use: {
+      ...browser.use,
+      // Measured, not guessed. This suite takes about 3 minutes in Chromium,
+      // 5-8 in WebKit and 6-9 in Firefox on this host — on a box already at a
+      // load average in the twenties. At the shared 60s timeout the slow engines
+      // fail on readiness rather than on behaviour, and a failure that means
+      // "the page had not finished loading" is indistinguishable from one that
+      // means "this engine does it differently". Enabling WebKit took the suite
+      // from 3 minutes to 27, entirely in timeouts.
+      //
+      // Raising the timeout is not the same as lowering the bar: every assertion
+      // is unchanged, and a genuine hang still fails, just later. What it removes
+      // is the noise that was hiding the answer.
+      ...(browser.name === 'webkit'
+        ? { timeout: 180_000, expect: { timeout: 20_000 } }
+        : browser.name === 'firefox'
+          ? { timeout: 120_000, expect: { timeout: 15_000 } }
+          : {}),
+    },
   })),
 
   webServer: {

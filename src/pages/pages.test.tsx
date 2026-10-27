@@ -122,11 +122,17 @@ describe('the product page', () => {
   });
 
   it('omits the install section for a product that is not published', () => {
-    // Six of eleven have no registry package, and an empty "Install it" heading
-    // on those would be worse than no section.
-    for (const id of ['gateway', 'os', 'hilgit', 'hilpress', 'spectra', 'studio']) {
-      const { unmount } = render(<ProductPage product={productById.get(id)!} />);
-      expect(screen.queryByRole('heading', { name: 'Install it' }), id).not.toBeInTheDocument();
+    // The unpublished set is read from the data rather than listed here: the
+    // hand-written version named `spectra` as having no package after it gained
+    // one, so the test asserted the opposite of the site. A list that has to be
+    // edited whenever a product is published is a copy of the truth, not a test
+    // of it.
+    const unpublished = products.filter((product) => !product.developer);
+    expect(unpublished.length, 'every product is published, so this asserts nothing').toBeGreaterThan(0);
+
+    for (const product of unpublished) {
+      const { unmount } = render(<ProductPage product={product} />);
+      expect(screen.queryByRole('heading', { name: 'Install it' }), product.id).not.toBeInTheDocument();
       unmount();
     }
   });

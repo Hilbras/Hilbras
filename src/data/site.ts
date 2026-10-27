@@ -13,7 +13,7 @@ export const site = {
    * built HTML from this value, so moving to a different host is a one-line
    * edit plus a rebuild.
    */
-  domain: 'https://hilbras.vercel.app',
+  domain: 'https://www.hilbras.com',
   tagline: 'Technology for building what comes next.',
   headline: 'Build. Connect. Create.',
   description:
@@ -170,6 +170,13 @@ export const footerGroups: ReadonlyArray<{ title: string; links: readonly NavLin
       { href: '/#about', label: 'About' },
       { href: '/#philosophy', label: 'Philosophy' },
       { href: '/#vision', label: 'Vision' },
+    ],
+  },
+  {
+    title: 'Social',
+    links: [
+      { href: 'https://x.com/lacrous0', label: 'X' },
+      { href: 'https://www.threads.com/@hilbras.ai', label: 'Threads' },
     ],
   },
 ] as const;

@@ -6,7 +6,7 @@
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm build:client && pnpm build:server && pnpm validate && pnpm seo && pnpm prerender",
+    "build": "pnpm build:client && pnpm build:server && pnpm validate && pnpm assert:registry && pnpm seo && pnpm prerender",
     "build:client": "vite build",
     "build:server": "vite build --mode ssr",
     "prerender": "node scripts/prerender.mjs",
@@ -22,6 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "check": "pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm verify:validator && pnpm build && pnpm assert:build && pnpm assert:headers && pnpm assert:design && pnpm smoke:local",
     "assert:build": "node scripts/assert-build-output.mjs",
+    "assert:registry": "node scripts/assert-registry.mjs",
     "assert:headers": "node scripts/assert-security-headers.mjs",
     "verify:build-assertion": "node scripts/verify-build-assertion.mjs",
     "test:e2e": "playwright test",

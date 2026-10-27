@@ -33,7 +33,11 @@ export function buildGraph(origin: string = resolveSiteUrl()): JsonNode[] {
     slogan: site.tagline,
     description: site.description,
     foundingDate: site.organisation.founding,
-    sameAs: [site.organisation.github],
+    sameAs: [
+      site.organisation.github,
+      'https://x.com/lacrous0',
+      'https://www.threads.com/@hilbras.ai',
+    ],
   };
 
   const nodes: JsonNode[] = [

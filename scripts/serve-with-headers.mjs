@@ -5,6 +5,25 @@
  * A Content Security Policy that is only ever checked by a deployment is a
  * Content Security Policy that is broken on the day it ships. This applies the
  * real policy locally so the test suite runs against it.
+ *
+ * **Two things are deliberately withheld, both for the same reason: this server
+ * is plain HTTP on loopback and has no TLS to offer.**
+ *
+ * `Strict-Transport-Security` tells a client every future request to this origin
+ * must be HTTPS, and the CSP carries `upgrade-insecure-requests`, which upgrades
+ * every `http://` subresource to `https://`. Both are correct in production and
+ * both are actively harmful here: WebKit honours them for `127.0.0.1`, every
+ * asset then fails on a TLS handshake error, the page loads inert, and 27 tests
+ * fail for reasons that have nothing to do with the site.
+ *
+ * Chromium and Firefox exempt loopback from both, which is exactly why only one
+ * engine saw it and why the suite was green in two browsers and broken in the
+ * third. The lesson generalises: a policy that is only ever tested on the one
+ * platform that exempts you is not tested.
+ *
+ * `assert-security-headers.mjs` checks both where they take effect — in
+ * `vercel.json`, which is what the deployment applies — so withholding them
+ * here costs nothing in coverage.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -29,6 +48,24 @@ const types = {
   '.json': 'application/json',
 };
 
+/**
+ * Header rules that are not sent over plain HTTP on loopback.
+ *
+ * Only HSTS, and only because this server has no TLS to offer. See the note at
+ * the top of this file: WebKit upgrades loopback to HTTPS when it sees the
+ * header, and then every asset fails on a TLS handshake error.
+ */
+const WITHHELD_OVER_HTTP = new Set(['strict-transport-security']);
+
+/**
+ * CSP directives stripped for the same reason.
+ *
+ * `upgrade-insecure-requests` upgrades every `http://` subresource to `https://`,
+ * which is correct in production and fatal here — there is no TLS on this port.
+ * WebKit honours it for loopback, so every asset fails and the page loads inert.
+ */
+const STRIPPED_CSP_DIRECTIVES = ['upgrade-insecure-requests'];
+
 /** Picks the most specific matching header rule, the way Vercel does. */
 function headersFor(pathname) {
   const out = {};
@@ -36,6 +73,22 @@ function headersFor(pathname) {
     if (rule.source === '/(.*)' || pathname.startsWith(rule.source.replace('/(.*)', ''))) {
       for (const h of rule.headers) out[h.key] = h.value;
     }
+  }
+  // Header names are case-insensitive, and `vercel.json` writes them in title
+  // case — comparing lowercased keys is the only way this actually matches.
+  for (const key of Object.keys(out)) {
+    if (WITHHELD_OVER_HTTP.has(key.toLowerCase())) delete out[key];
+  }
+
+  // Same reasoning, applied to the policy rather than the transport: the
+  // directive is correct and simply has nothing to upgrade to here.
+  const csp = out['Content-Security-Policy'];
+  if (typeof csp === 'string') {
+    out['Content-Security-Policy'] = csp
+      .split(';')
+      .map((directive) => directive.trim())
+      .filter((directive) => !STRIPPED_CSP_DIRECTIVES.includes(directive))
+      .join('; ');
   }
   return out;
 }

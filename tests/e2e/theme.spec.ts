@@ -161,14 +161,37 @@ test.describe('theme', () => {
       const data = context.getImageData(0, 0, canvas.width, Math.min(canvas.height, 400)).data;
       let lit = 0;
       for (let i = 3; i < data.length; i += 4) if (data[i] > 0) lit += 1;
-      return { present: true, painted: lit > 0, size: `${canvas.width}x${canvas.height}` };
+      return {
+        present: true,
+        painted: lit > 0,
+        backing: `${canvas.width}x${canvas.height}`,
+        css: `${canvas.clientWidth}x${canvas.clientHeight}`,
+      };
     });
 
     expect(painted.present).toBe(true);
     // Sized to the viewport, not the document. The `transform` bug that made it
     // 10584px tall would show up here as a much larger canvas, so the
     // expectation is derived from the real viewport rather than hardcoded.
-    const viewport = page.viewportSize();
-    expect(painted.size).toBe(`${viewport?.width}x${viewport?.height}`);
+    //
+    // Compared on the *CSS* box. The backing store is that box at the device
+    // pixel ratio, and Playwright's `Desktop Safari` descriptor sets it to 2 —
+    // so comparing backing pixels to CSS pixels read 2540x1440 against
+    // 1280x720 and called a correctly sized canvas wrong. The two coincide only
+    // at a ratio of 1, which is why no other engine saw it.
+    // The content box, not the viewport. A `position: fixed` element fills the
+    // initial containing block, which excludes a classic scrollbar — so in
+    // WebKit on Linux a 1280px viewport gives a 1270px box, and Chromium's
+    // overlay scrollbars give 1280. Comparing against the viewport called a
+    // correctly sized canvas wrong, in one engine only, for the third time.
+    const box = await page.evaluate(() => ({
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+      // The document is roughly 10,500px tall. This is the number that catches
+      // a canvas sized to the document instead of the screen.
+      documentHeight: document.documentElement.scrollHeight,
+    }));
+    expect(painted.css).toBe(`${box.width}x${box.height}`);
+    expect(box.documentHeight).toBeGreaterThan(box.height * 2);
   });
 });

@@ -55,7 +55,7 @@ test.describe('product pages', () => {
   });
 
   test('shows how to install the published ones, and omits it for the rest', async ({ page }) => {
-    // Five of the eleven have a registry package. The other six get no section
+    // Seven of the thirteen have a registry package. The rest get no section
     // at all, rather than an empty heading — an "Install it" heading on a
     // product with nothing to install is worse than no heading.
     const PUBLISHED = [
@@ -63,9 +63,11 @@ test.describe('product pages', () => {
       ['keystone', '@hilbras/keystone'],
       ['remembera', '@hilbras/remembra'],
       ['omnihilbras', '@hilbras/omnihilbras'],
-      ['code', 'hilbras-code'],
+      ['omninode', '@hilbras/omninode'],
+      ['omnicode', '@hilbras/omnicode'],
+      ['spectra', '@hilbras/spectra'],
     ] as const;
-    const UNPUBLISHED = ['gateway', 'os', 'hilgit', 'hilpress', 'spectra', 'studio'];
+    const UNPUBLISHED = ['gateway', 'os', 'hilgit', 'hilpress', 'studio', 'code'];
 
     for (const [slug, packageName] of PUBLISHED) {
       await page.goto(`/products/${slug}`, { waitUntil: 'load' });
@@ -95,8 +97,8 @@ test.describe('product pages', () => {
     };
 
     for (const [slug, version] of [
-      ['sdk', '3.2.0'],
-      ['keystone', '3.5.3'],
+      ['sdk', '3.7.0'],
+      ['keystone', '4.0.1'],
     ] as const) {
       const node = await productNode(slug);
       expect(node.softwareVersion, slug).toBe(version);

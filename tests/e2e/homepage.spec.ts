@@ -70,10 +70,11 @@ test.describe('homepage', () => {
     // Polled, not waited: the reveal is a CSS transition kicked off by an
     // IntersectionObserver, so there is no fixed duration to sleep for.
     await expect
-      .poll(() => stillHidden(page), {
-        message: 'elements left invisible after a full scroll',
-        timeout: 8_000,
-      })
+      // No hardcoded timeout: this uses the configured per-engine `expect`
+      // timeout, which is roughly nine times longer for WebKit than for
+      // Chromium. A fixed 8s overrode that and failed on readiness rather than
+      // on behaviour, with 39 elements still mid-transition.
+      .poll(() => stillHidden(page), { message: 'elements left invisible after a full scroll' })
       .toEqual([]);
     expect(problems.consoleErrors).toEqual([]);
   });
@@ -83,7 +84,8 @@ test.describe('homepage', () => {
     await page.locator('#products').scrollIntoViewIfNeeded();
 
     const names = ['Hilbras SDK', 'Hilbras Remembera', 'Hilbras Keystone', 'HilPress', 'Hilbras Studio',
-      'Hilbras Gateway', 'OmniHilbras', 'Hilbras OS', 'Hilbras Code', 'HilGit', 'Hilbras Spectra'];
+      'Hilbras Gateway', 'OmniHilbras', 'OmniNode', 'Hilbras OS', 'Hilbras Code', 'OmniCode', 'HilGit',
+      'Hilbras Spectra'];
     for (const name of names) {
       await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible();
     }
@@ -93,10 +95,48 @@ test.describe('homepage', () => {
     for (const width of [320, 390, 834, 1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await gotoHome(page);
-      const overflows = await page.evaluate(
-        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      // "Can the user scroll sideways?" — asked directly, by trying.
+      //
+      // The obvious check, `scrollWidth > clientWidth`, is wrong, and only a
+      // third engine reveals it: `clientWidth` excludes a classic scrollbar and
+      // `scrollWidth` does not. WebKit on Linux gives a 310px content box in a
+      // 320px viewport, so on a page that cannot scroll sideways *at all* the
+      // comparison reads true. Chromium has overlay scrollbars, where
+      // `clientWidth` equals the viewport, so the same bug is invisible there.
+      //
+      // Scrolling right and asking whether the document moved tests the thing
+      // the reader would experience, and no scrollbar accounting can fake it.
+      const sideways = await page.evaluate(() => {
+        const root = document.documentElement;
+        const scroller = document.scrollingElement ?? root;
+        const before = scroller.scrollLeft;
+        // The site sets `scroll-behavior: smooth`, which would animate and make
+        // the read below meaningless.
+        scroller.scrollTo({ left: 9999, behavior: 'instant' });
+        const moved = scroller.scrollLeft;
+        scroller.scrollTo({ left: before, behavior: 'instant' });
+        return {
+          moved,
+          scrollWidth: scroller.scrollWidth,
+          innerWidth: window.innerWidth,
+          // How wide a classic scrollbar is here. Zero for Chromium, which uses
+          // overlay scrollbars, so the same page measures differently in each.
+          scrollbar: window.innerWidth - root.clientWidth,
+        };
+      });
+      expect(
+        sideways.scrollWidth - sideways.scrollbar,
+        `content extends past the viewport at ${width}px ` +
+          `(scrollWidth ${sideways.scrollWidth}, scrollbar ${sideways.scrollbar}, viewport ${sideways.innerWidth})`,
+      ).toBeLessThanOrEqual(sideways.innerWidth);
+
+      // And the reader must not be able to shove the page sideways. Allow the
+      // scrollbar's own width: a document with a vertical scrollbar always has
+      // that much slack, in every engine, and reporting it as overflow is how
+      // this test managed to fail on a page that cannot scroll sideways at all.
+      expect(sideways.moved, `the page scrolls sideways at ${width}px`).toBeLessThanOrEqual(
+        sideways.scrollbar,
       );
-      expect(overflows, `horizontal overflow at ${width}px`).toBe(false);
     }
   });
 });

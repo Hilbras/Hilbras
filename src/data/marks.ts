@@ -71,7 +71,23 @@ export const marks = {
     { shape: 'path', d: 'M9 9h9.75a2.25 2.25 0 0 1 2.25 2.25V18' },
   ],
  // A scanned perimeter.
-  shield: [{ shape: 'path', d: 'M12 2.75 20 6.4v5.85c0 4.3-3.3 7.6-8 9-4.7-1.4-8-4.7-8-9V6.4Z' }]
+  shield: [{ shape: 'path', d: 'M12 2.75 20 6.4v5.85c0 4.3-3.3 7.6-8 9-4.7-1.4-8-4.7-8-9V6.4Z' }],
+  // One point coordinating three: agents bound to a single plan.
+  network: [
+    { shape: 'circle', cx: 12, cy: 12, r: 3.25 },
+    { shape: 'circle', cx: 12, cy: 3.75, r: 1.75 },
+    { shape: 'circle', cx: 4.5, cy: 18.25, r: 1.75 },
+    { shape: 'circle', cx: 19.5, cy: 18.25, r: 1.75 },
+    { shape: 'path', d: 'M12 5.5v3.25M9.6 14l-3.7 2.9M14.4 14l3.7 2.9' },
+  ],
+  // A pluggable core: modules docked into a kernel.
+  kernel: [
+    { shape: 'rect', x: 8.75, y: 8.75, width: 6.5, height: 6.5, rx: 1.5 },
+    { shape: 'rect', x: 2.75, y: 2.75, width: 4.5, height: 4.5, rx: 1 },
+    { shape: 'rect', x: 16.75, y: 2.75, width: 4.5, height: 4.5, rx: 1 },
+    { shape: 'rect', x: 2.75, y: 16.75, width: 4.5, height: 4.5, rx: 1 },
+    { shape: 'rect', x: 16.75, y: 16.75, width: 4.5, height: 4.5, rx: 1 },
+  ]
 } as const satisfies Record<string, readonly MarkShape[]>;
 
 /**

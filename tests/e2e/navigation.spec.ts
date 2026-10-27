@@ -129,13 +129,19 @@ test.describe('desktop navigation', () => {
       await gotoHome(page);
       const trigger = page.getByRole('button', { name: /Products/ });
       await trigger.click();
+
+      // Wait for the panel to be open, rather than sleeping. A fixed 250ms is a
+      // race: WebKit needs longer to hydrate and run the disclosure, so the
+      // panel was not there yet and the test reported an overflow for a panel
+      // that had not opened. Measuring the panel and measuring its absence are
+      // different assertions, and only one of them was intended.
+      const panel = page.locator('header [data-state="open"] .card');
+      await expect(panel, `the products panel did not open at ${height}px`).toHaveCount(1);
       await settle(page);
 
-      const fits = await page.evaluate(() => {
-        const panel = document.querySelector('header [data-state="open"] .card');
-        if (!panel) return false;
-        return panel.getBoundingClientRect().bottom <= window.innerHeight + 1;
-      });
+      const fits = await panel.evaluate(
+        (element) => element.getBoundingClientRect().bottom <= window.innerHeight + 1,
+      );
       expect(fits, `products panel overflows a ${height}px viewport`).toBe(true);
     }
   });

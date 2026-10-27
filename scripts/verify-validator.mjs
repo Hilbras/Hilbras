@@ -48,7 +48,7 @@ const cases = [
   {
     name: 'area lists a product that does not exist',
     expect: 'dangling-area-reference',
-    mutate: (s) => s.replace("products: ['keystone', 'code', 'hilgit']", "products: ['keystone', 'code', 'hilgit', 'ghostware']"),
+    mutate: (s) => s.replace("products: ['keystone', 'code', 'omnicode', 'hilgit']", "products: ['keystone', 'code', 'omnicode', 'hilgit', 'ghostware']"),
   },
   {
     name: 'repository outside the Hilbras org',
@@ -75,7 +75,7 @@ const cases = [
     expect: 'orphan-product',
     mutate: (s) =>
       s
-        .replace("products: ['keystone', 'code', 'hilgit']", "products: ['keystone', 'code']")
+        .replace("products: ['keystone', 'code', 'omnicode', 'hilgit']", "products: ['keystone', 'code', 'omnicode']")
         .replace("products: ['hilgit', 'studio', 'hilpress']", "products: ['studio', 'hilpress']"),
   },
   // The next three are the second line of defence. `tsc` rejects a product

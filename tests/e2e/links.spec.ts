@@ -60,8 +60,8 @@ test.describe('links', () => {
     // Every product name appears in at least a chip, a card, or the map.
     const names = [
       'Hilbras SDK', 'Hilbras Remembera', 'Hilbras Keystone', 'HilPress',
-      'Hilbras Studio', 'Hilbras Gateway', 'OmniHilbras', 'Hilbras OS',
-      'Hilbras Code', 'HilGit', 'Hilbras Spectra',
+      'Hilbras Studio', 'Hilbras Gateway', 'OmniHilbras', 'OmniNode',
+      'Hilbras OS', 'Hilbras Code', 'OmniCode', 'HilGit', 'Hilbras Spectra',
     ];
     for (const name of names) {
       await expect(page.getByText(name, { exact: true }).first()).toBeVisible();

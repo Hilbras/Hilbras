@@ -224,7 +224,7 @@ if (site) {
     'https://spdx.org',
   ]);
   for (const source of [await read('src/data/site.ts'), await read('src/data/areas.ts')]) {
-    for (const product of source.match(/href: '(https:[^']+)'/g) ?? []) {
+    for (const product of source.match(/(?:href|documentation): '(https:[^']+)'/g) ?? []) {
       allowed.add(new URL(product.match(/'(https:[^']+)'/)[1]).origin);
     }
   }

@@ -9,7 +9,7 @@ Build. Connect. Create.
 
 > Hilbras is not a single product. It is a technology ecosystem.
 
-One route, eleven products, six technology areas, and no client-side router. The
+One route, thirteen products, six technology areas, and no client-side router. The
 page is prerendered to static HTML so it is readable in full by crawlers that do
 not run JavaScript, then hydrated.
 
@@ -109,6 +109,7 @@ pnpm seo                # robots.txt, sitemap.xml, site.webmanifest
 pnpm icons             # regenerate the application icons from favicon.svg
 pnpm smoke:local        # deployment checks against a server it starts itself
 pnpm smoke <url>        # the same checks against a deployed URL
+pnpm assert:registry    # every published version matches the npm registry
 pnpm serve:headers      # dist/ with the real vercel.json headers
 
 pnpm check              # everything below — run this before pushing
@@ -203,7 +204,7 @@ owns the cleanup.
 src/
 ├── components/
 │   ├── ui/
-│   │   ├── Mark.tsx          11 product marks + the Hilbras mark, inline SVG
+│   │   ├── Mark.tsx          13 product marks + the Hilbras mark, inline SVG
 │   │   ├── ProductMark.tsx   the mark on a shared 24-unit grid
 │   │   ├── ProductLink.tsx   the single place a product link is built
 │   │   ├── StatusPill.tsx    the status pill, full and compact
@@ -214,14 +215,17 @@ src/
 │   ├── Hero.tsx  Navbar.tsx  About.tsx  Ecosystem.tsx  Products.tsx
 │   ├── ConnectionMap.tsx  Technology.tsx  Audiences.tsx  Philosophy.tsx
 │   ├── Vision.tsx  FinalCta.tsx  Footer.tsx
+│   ├── ProductCard.tsx       the product card, featured and compact
 │   ├── ParticleField.tsx     the drifting node field behind the page
 │   ├── ThemeToggle.tsx
-│   └── components.test.tsx
+│   ├── components.test.tsx
+│   └── counts.test.tsx       headings against the counts they state
 ├── data/
 │   ├── areas.ts              products, areas, statuses, kinds, helpers
 │   ├── marks.ts              product marks, as geometry on one 24-unit grid
 │   ├── stages.ts             the connection map's bands, least to most foundational
-│   ├── site.ts               company, domain, navigation, copy, audiences
+│   ├── site.ts               company, domain, navigation, copy, audiences, counts
+│   ├── url.ts                the one origin resolver (SITE_URL → Vercel → domain)
 │   ├── links.ts              productHref / isExternalHref / externalRel
 │   ├── structuredData.ts     the JSON-LD graph
 │   ├── validation.ts         the rules the build enforces
@@ -236,8 +240,10 @@ src/
 │   ├── HomePage.tsx          the homepage sections, in order
 │   ├── ProductIndexPage.tsx  every product, grouped by owning area
 │   ├── ProductPage.tsx       one product
+│   ├── DevelopersPage.tsx    the installable packages, and what is not published
 │   ├── NotFoundPage.tsx      lists every product, since a stale link is likeliest
-│   └── pages.test.tsx
+│   ├── pages.test.tsx
+│   └── DevelopersPage.test.tsx
 ├── test/
 │   └── setup.ts              matchMedia stub, localStorage reset
 ├── entry-server.tsx          SSR entry; also the module the build scripts import
@@ -255,6 +261,7 @@ tests/
 │   ├── accessibility.spec.ts skip link, focus rings, names, heading order
 │   ├── links.spec.ts         rel, target, announcements, dead anchors
 │   ├── pages.spec.ts         every product page, the index, and the 404
+│   ├── overflow.spec.ts      each element's own box against the viewport
 │   └── performance.spec.ts   canvas size, long tasks, layout shift, paint, third parties
 
 scripts/
@@ -262,6 +269,7 @@ scripts/
 ├── generate-seo.mjs          robots / sitemap / manifest
 ├── generate-icons.mjs        application icons, rendered from favicon.svg
 ├── validate-data.mjs         fails the build on inconsistent data
+├── assert-registry.mjs       the published versions match the npm registry
 ├── assert-build-output.mjs   the built document is crawlable
 ├── assert-security-headers.mjs  the policy is strong
 ├── serve-with-headers.mjs    dist/ with the real vercel.json headers
@@ -286,12 +294,13 @@ and that is how an earlier domain change missed one of them.
 
 ## Routes
 
-Thirteen documents, all prerendered:
+Sixteen documents, all prerendered:
 
 ```text
 /                    the company homepage
 /products            the index, grouped by area
-/products/:product   one per product, 11 of them
+/developers          the installable packages, and what is not published
+/products/:product   one per product, 13 of them
 404.html             served with a 404 status, marked noindex
 ```
 
@@ -354,11 +363,11 @@ description does not fit in a navigation dropdown.
 
 A product page renders only what these fields hold, and each section is
 conditional on its data existing — so there is no empty "Use cases" heading on
-nine of eleven products. `features`, `useCases` and `integrations` are
-deliberately absent: inventing eleven products' feature lists is not something a
-website should do. They arrive the day the data supports them.
+products whose data does not carry one. `features`, `useCases` and `integrations`
+are deliberately absent: inventing a feature list is not something a website
+should do. They arrive the day the data supports them.
 
-Counts are spelled out in headings — "Eleven products" — so `spell()` has to
+Counts are spelled out in headings — "Thirteen products" — so `spell()` has to
 keep up. It was a thirteen-entry table that threw above twelve, and a test
 asserting it threw, so the thirteenth product could not be added and the wall was
 written into the suite as a property. It now handles units, teens, tens and
@@ -373,24 +382,38 @@ where the result is cut mid-word. A product title drops the `— Hilbras` suffix
 when including it would overflow — the name itself is never truncated to fit.
 
 `developer` holds the published package name, version, licence and install
-command, and is what the **Install it** section on a product page renders. Five
-of the eleven have one; the other six have no registry package and get no
+command, and is what the **Install it** section on a product page renders. Seven
+of the thirteen have one; the other six have no registry package and get no
 section. The values were read from the npm registry and each project's README,
 and the page shows the date they were read, because a version quoted without a
 date is a version nobody checked. `docs/DEPENDENCIES.md` has the full audit.
+
+`pnpm assert:registry` runs inside `pnpm build` and asks npm for each package's
+`latest` tag, failing the build when the data and the registry disagree. It
+exists because they did: in October 2026 the site advertised `@hilbras/sdk`
+3.2.0 against 3.7.0, `@hilbras/keystone` 3.5.3 against 4.0.1, and an install
+command for `hilbras-code`, which has no published versions at all. Every one of
+those passed `pnpm check`, because "is a semver" and "is the published version"
+are different questions. It needs network, so it lives in the build rather than
+in the offline unit tests.
+
+Licences are read per package too. `sharedLicence()` returns `null` as soon as
+two published packages differ, so adding `@hilbras/spectra` (AGPL-3.0) removed
+the "all under the MIT licence" sentence from the developer page by itself
+rather than leaving it to be noticed.
 
 ### Adding a product
 
 1. Add the record above to `products` in `src/data/areas.ts`.
 2. Add its id to the owning area's `products` array. A product can be in two.
-3. Add a mark to `components/ui/Mark.tsx` if it needs its own geometry.
+3. Add a mark to `src/data/marks.ts` if it needs its own geometry.
 
 Nothing else changes. The product grid, the ecosystem cards, the navigation
 dropdown, the mobile menu, the footer, the connection map, the JSON-LD graph, and
 the counts all derive from the data.
 
-`pnpm check` will tell you if the record is malformed, and `pnpm assert:content`
-will tell you if a heading still states the old number of products.
+`pnpm check` will tell you if the record is malformed; `counts.test.tsx` will tell
+you if a heading still states the old number of products.
 
 ### Adding a technology area
 
@@ -421,7 +444,7 @@ sitemap, robots, manifest and JSON-LD cannot disagree.
 
 ```bash
 pnpm build                                    # uses site.domain
-SITE_URL=https://hilbras-git-abc.vercel.app pnpm build   # explicit override
+SITE_URL=https://hilbras-preview-abc.vercel.app pnpm build   # explicit override
 ```
 
 Resolution order, first match wins:
@@ -469,7 +492,7 @@ and headers, so a Vercel project needs no further configuration.
 ```bash
 vercel link
 vercel --prod
-node scripts/smoke.mjs https://hilbras.vercel.app
+node scripts/smoke.mjs https://www.hilbras.com
 ```
 
 A preview deployment is behind Vercel Authentication, and the smoke test needs
@@ -615,7 +638,7 @@ Plus one `Organization` and one `WebSite`, `codeRepository` and `hasPart` where
 they exist, and `creativeWorkStatus` carrying maturity.
 
 `operatingSystem` is emitted only where it is informative. It was
-`"Cross-platform"` on all eleven nodes, which tells a crawler nothing and drowns
+`"Cross-platform"` on every node, which tells a crawler nothing and drowns
 out the one product with a specific answer; Hilbras OS is Ubuntu-based and says
 `Linux`, and the rest omit it rather than assert the obvious.
 
@@ -711,7 +734,7 @@ field.
 ## Testing
 
 ```bash
-pnpm test            # 110 unit and component tests
+pnpm test            # 146 unit and component tests
 pnpm test:coverage   # with the thresholds enforced
 pnpm test:e2e        # 69 tests across Chromium and Firefox
 pnpm check:all       # everything
@@ -845,7 +868,7 @@ deployment still be wrong — a missing header, a rewrite that strips a query, a
 CDN serving a stale `index.html`. None of those fail a local check.
 
 ```bash
-node scripts/smoke.mjs https://hilbras.vercel.app
+node scripts/smoke.mjs https://www.hilbras.com
 SITE_URL="$PREVIEW" node scripts/smoke.mjs "$PREVIEW" --via-vercel-cli
 ```
 
@@ -865,7 +888,7 @@ See [environments](#environments) for why a preview needs the bypass.
 
 ```bash
 vercel --prod
-node scripts/smoke.mjs https://hilbras.vercel.app
+node scripts/smoke.mjs https://www.hilbras.com
 ```
 
 **The repository is private**, so there is no Vercel Git integration and deploys
