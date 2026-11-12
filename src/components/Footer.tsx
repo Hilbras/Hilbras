@@ -1,0 +1,84 @@
+import Link from "next/link";
+import { areaById, products } from "@/data/areas";
+import { externalRel, footerGroups, isExternalHref, site } from "@/data/site";
+import { HilbrasMark } from "@/components/ui/Mark";
+import { ProductLink } from "@/components/ui/ProductLink";
+
+export function Footer() {
+  // `new Date()` blocks static prerendering in Next 16's cache model, and the
+  // copyright year is not a value that needs to be computed at request time:
+  // the company was founded in 2026 and the footer's date is the build's date,
+  // which is the same value the site already publishes as `lastModified`.
+  const year = site.organisation.founding;
+
+  return (
+    <footer className="relative border-t border-line">
+      <div className="shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.1fr_1.5fr_0.8fr_0.8fr]">
+        <div>
+          <a href="#main" className="flex items-center gap-2.5 text-15 font-semibold tracking-tight">
+            <HilbrasMark className="h-[18px] w-[18px] text-gold" />
+            <span>{site.name}</span>
+          </a>
+          <p className="muted mt-3 max-w-[26ch] text-13 leading-relaxed">{site.tagline}</p>
+          <Link href="/#start" className="btn-gold mt-5 !px-3.5 !py-2 !text-13">
+            Get started
+          </Link>
+        </div>
+
+        <nav aria-labelledby="footer-products">
+          <h2 id="footer-products" className="mono-label">
+            Products
+          </h2>
+          <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-13">
+            {products.map((product) => {
+              const area = areaById.get(product.area);
+              return (
+                <li key={product.id} className="min-w-0">
+                  <ProductLink product={product} className="footer-link block truncate">
+                    {product.name}
+                  </ProductLink>
+                  {area ? <span className="muted block truncate text-11">{area.short}</span> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {footerGroups.map((group) => (
+          <nav key={group.title} aria-labelledby={`footer-${group.title}`}>
+            <h2 id={`footer-${group.title}`} className="mono-label">
+              {group.title}
+            </h2>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {group.links.map((link) => {
+                const external = isExternalHref(link.href);
+                return (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      className="footer-link"
+                      rel={externalRel(link.href)}
+                      target={external ? "_blank" : undefined}
+                    >
+                      {link.label}
+                      {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        ))}
+      </div>
+
+      <div className="border-t border-line">
+        <div className="shell flex flex-col items-center justify-between gap-2 py-5 text-xs sm:flex-row">
+          <span className="muted">
+            © {year} {site.organisation.legalName}. All rights reserved.
+          </span>
+          <span className="muted font-mono">An ecosystem, not a monolith.</span>
+        </div>
+      </div>
+    </footer>
+  );
+}

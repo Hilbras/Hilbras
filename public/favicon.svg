@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hilbras">
+  <!-- The gradient is the one place a hex value is unavoidable: an icon has no
+       theme to inherit from, so it carries the dark-theme ramp explicitly.
+       The inline component in src/components/ui/Mark.tsx carries the same mark
+       over `currentColor` — keep the two in proportion. -->
+  <defs>
+    <linearGradient id="hb-gold" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f3d789"/>
+      <stop offset="0.45" stop-color="#e2bd52"/>
+      <stop offset="1" stop-color="#8a6d12"/>
+    </linearGradient>
+    <linearGradient id="hb-gold-soft" x1="16" y1="48" x2="50" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8a6d12" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#f3d789" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="hb-glow" cx="0.5" cy="0.32" r="0.65">
+      <stop offset="0" stop-color="#e2bd52" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#e2bd52" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="#0c0b09"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="url(#hb-glow)"/>
+  <rect x="2" y="2" width="60" height="60" rx="16.5" fill="none" stroke="url(#hb-gold)" stroke-width="1.5"/>
+
+  <path d="M32 7 54 19.5v25L32 57 10 44.5v-25Z" fill="none" stroke="url(#hb-gold)" stroke-width="0.9" opacity="0.35"/>
+  <path d="M32 11 50.5 21v22L32 53 13.5 43V21Z" fill="none" stroke="url(#hb-gold)" stroke-width="0.6" opacity="0.16"/>
+
+  <path d="M23.5 45 45.5 18" stroke="url(#hb-gold-soft)" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+
+  <path d="M19.5 19h7v9.5h11V19h7v26h-7V35.5h-11V45h-7Z" fill="url(#hb-gold)"/>
+  <path d="M19.5 19h7v1.4h-5.6V44h-1.4Z" fill="#f3d789" opacity="0.35"/>
+
+  <path d="M47 11.5l1.9 4.6 4.6 1.9-4.6 1.9L47 24.5l-1.9-4.6-4.6-1.9 4.6-1.9Z" fill="url(#hb-gold)"/>
+  <circle cx="47" cy="18" r="1.5" fill="#f3d789"/>
+  <circle cx="18.5" cy="45.5" r="1.4" fill="url(#hb-gold)"/>
+</svg>
